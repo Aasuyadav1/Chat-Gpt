@@ -79,7 +79,7 @@ export function AppSidebar() {
               </div>
               <SidebarTrigger />
             </div>
-            
+
             <ScrollArea className="h-[calc(100vh-8rem)]">
               <SidebarGroupContent className="space-y-5 py-2">
                 {/* Quick Actions - Always visible, top 3 icons when collapsed */}
@@ -87,8 +87,8 @@ export function AppSidebar() {
                   {quickActions.map((item) => (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton asChild>
-                        <Button 
-                          variant="ghost" 
+                        <Button
+                          variant="ghost"
                           className="w-full justify-start !text-[15px] !font-light gap-3 px-3"
                         >
                           <item.icon className="!w-5 !h-5" />
@@ -109,8 +109,8 @@ export function AppSidebar() {
                   {features.map((item) => (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton asChild>
-                        <Button 
-                          variant="ghost" 
+                        <Button
+                          variant="ghost"
                           className="w-full justify-start gap-3 px-3 !text-[15px] !font-light"
                         >
                           <item.icon className="!w-5 !h-5" />
@@ -130,8 +130,8 @@ export function AppSidebar() {
                     {recentChats.map((chat, index) => (
                       <SidebarMenuItem key={index}>
                         <SidebarMenuButton asChild>
-                          <Button 
-                            variant="ghost" 
+                          <Button
+                            variant="ghost"
                             className="w-full justify-start px-3 !text-[15px] font-light"
                           >
                             <span className="truncate">{chat}</span>
@@ -148,8 +148,8 @@ export function AppSidebar() {
 
         {/* Fixed Footer - Hidden when collapsed */}
         <div className="mt-auto px-2 group-data-[collapsible=icon]:hidden">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="w-full !bg-transparent border-none justify-between h-14 px-4"
           >
             <div className="flex flex-col items-start text-left">
