@@ -5,5 +5,5 @@ export interface userType extends Document {
   name: string;
   email: string;
   image: string;
-  memory: string;
+  memory: string[];
 }

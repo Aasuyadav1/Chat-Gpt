@@ -4,10 +4,6 @@ import { ThreadType } from "@/types/thread.type";
 
 const ThreadSchema = new Schema<ThreadType>(
   {
-    threadId: {
-      type: String,
-      required: true,
-    },
     userId: {
         type: Schema.Types.ObjectId,
         ref: "User",

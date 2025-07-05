@@ -17,9 +17,11 @@ const UserSchema = new Schema<userType>(
       type: String,
       required: true,
     },
-    memory: {
-      type: String,
-    },
+    memory: [
+      {
+        type: String,
+      }
+    ],
   },
   { timestamps: true }
 );

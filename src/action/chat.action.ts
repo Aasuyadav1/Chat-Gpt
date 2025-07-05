@@ -6,33 +6,17 @@ import { generateText } from "ai";
 
 export const generateAiResponse = async ({
   message,
-  model,
-  geminiApiKey,
-  service,
 }: {
   message: string;
-  model: string;
-  geminiApiKey?: string;
-  service: string;
 }) => {
   try {
     if (!message) {
       throw new Error("Message is required");
     }
-    process.env.GOOGLE_GENERATIVE_AI_API_KEY = geminiApiKey;
-    const session = await auth();
-    if (!session?.user) {
-      throw new Error("Unauthorized");
-    }
-    // const openrouter = createOpenRouter({
-    //   apiKey: decrypt(session?.user?.openRouterApiKey as string),
-    // });
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY;
 
     const { text } = await generateText({
-      model:
-        service === "openrouter"
-          ? google(`models/${model.split("/")[1].trim()}`)
-          : google(`models/${model.split("/")[1].trim()}`),
+      model: google("gemini-2.5-flash"),
       prompt: message,
     });
 

@@ -45,41 +45,61 @@ export const getThread = async () => {
       .sort({ createdAt: -1 });
 
     // Debug: Log threads to check parentFolderId
-    console.log("All threads:", threads.map(thread => ({
-      _id: thread._id,
-      title: thread.title,
-      parentFolderId: thread.parentFolderId ? thread.parentFolderId._id : null,
-    })));
+    console.log(
+      "All threads:",
+      threads.map((thread) => ({
+        _id: thread._id,
+        title: thread.title,
+        parentFolderId: thread.parentFolderId
+          ? thread.parentFolderId._id
+          : null,
+      }))
+    );
 
     // Separate threads into folders and non-folder threads
-    const threadsInFolders = threads.filter(thread => thread.parentFolderId != null);
-    const threadsNotInFolders = threads.filter(thread => thread.parentFolderId == null);
+    const threadsInFolders = threads.filter(
+      (thread) => thread.parentFolderId != null
+    );
+    const threadsNotInFolders = threads.filter(
+      (thread) => thread.parentFolderId == null
+    );
 
     // Debug: Log threads with invalid parentFolderId
-    const invalidThreads = threadsInFolders.filter(thread => 
-      !folders.some(folder => folder._id.equals(thread.parentFolderId))
+    const invalidThreads = threadsInFolders.filter(
+      (thread) =>
+        !folders.some((folder) => folder._id.equals(thread.parentFolderId))
     );
     console.log("Threads with invalid parentFolderId:", invalidThreads);
 
     // Organize threads by folders
-    const folderThreads = folders.map(folder => ({
+    const folderThreads = folders.map((folder) => ({
       folder: serializeData(folder),
       threads: serializeData(
-        threadsInFolders.filter(thread => 
-          thread.parentFolderId && 
-          thread.parentFolderId.equals(folder._id)
+        threadsInFolders.filter(
+          (thread) =>
+            thread.parentFolderId && thread.parentFolderId.equals(folder._id)
         )
       ),
     }));
 
     // Categorize non-folder threads
     const today = new Date();
-    const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const endOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+    const startOfToday = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate()
+    );
+    const endOfToday = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate() + 1
+    );
 
-    const pinnedThreads = threadsNotInFolders.filter(thread => thread.isPinned === true);
+    const pinnedThreads = threadsNotInFolders.filter(
+      (thread) => thread.isPinned === true
+    );
 
-    const todayThreads = threadsNotInFolders.filter(thread => {
+    const todayThreads = threadsNotInFolders.filter((thread) => {
       const threadDate = new Date(thread.createdAt);
       return (
         threadDate >= startOfToday &&
@@ -88,7 +108,7 @@ export const getThread = async () => {
       );
     });
 
-    const weekThreads = threadsNotInFolders.filter(thread => {
+    const weekThreads = threadsNotInFolders.filter((thread) => {
       const threadDate = new Date(thread.createdAt);
       return (
         !(threadDate >= startOfToday && threadDate < endOfToday) &&
@@ -115,18 +135,10 @@ export const getThread = async () => {
 };
 export const createThread = async ({
   title,
-  threadId,
-  geminiApiKey,
-  service,
-  model,
-  parentFolderId,
+  _id,
 }: {
   title?: string;
-  threadId: string;
-  geminiApiKey?: string;
-  service: string;
-  model: string;
-  parentFolderId?: string;
+  _id: string;
 }) => {
   const session = await auth();
   console.log("New thread created");
@@ -149,6 +161,8 @@ export const createThread = async ({
     //   };
     // }
 
+    console.log("geenreated id", _id);
+
     const aiResponse = await generateAiResponse({
       message: `Create a 2-5 word title for this message: ${title}
 
@@ -165,22 +179,23 @@ export const createThread = async ({
       Chocolate Cake Recipe
       
       Response format: Just the title words, nothing else.`,
-      geminiApiKey,
-      service,
-      model,
     });
+
+    console.log("aiResponse", aiResponse);
     const thread = await Thread.create({
-      threadId: threadId,
+      _id: _id,
       userId: session.user.id,
       title: aiResponse.data || "New Thread",
-      parentFolderId: parentFolderId || null,
     });
+
+    console.log("thread createe this", thread);
 
     return {
       data: serializeData(thread),
       error: null,
     };
   } catch (error: any) {
+    console.log("error", error);
     return {
       data: null,
       error: error.message,
@@ -266,8 +281,6 @@ export const deleteThread = async ({ threadId }: { threadId: string }) => {
     };
   }
 };
-
-
 
 export const branchThread = async ({ messageId }: { messageId: string }) => {
   const session = await auth();

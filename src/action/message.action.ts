@@ -73,7 +73,7 @@ export const updateSelectedText = async ({
   }
 };
 
-export const getMessages = async ({ threadId }: { threadId: string }) => {
+export const getMessages = async ({ _id }: { _id: string }) => {
   const session = await auth();
 
   if (!session?.user) {
@@ -88,7 +88,7 @@ export const getMessages = async ({ threadId }: { threadId: string }) => {
 
     // Find the current thread
     const thread = await Thread.findOne({
-      threadId: threadId,
+      _id: _id,
       userId: session.user.id,
     });
 
@@ -99,51 +99,55 @@ export const getMessages = async ({ threadId }: { threadId: string }) => {
       };
     }
 
-    let allMessages: MessageType[] = [];
+    console.log("thread", thread);
 
-    if (thread.parentChatId) {
-      const parentMessage = await Message.findOne({
-        _id: thread.parentChatId,
-        userId: session.user.id,
-      });
+    // let allMessages: MessageType[] = [];
 
-      if (parentMessage) {
-        const parentThreadId = parentMessage.threadId;
+    // if (thread.parentChatId) {
+    //   const parentMessage = await Message.findOne({
+    //     _id: thread.parentChatId,
+    //     userId: session.user.id,
+    //   });
 
-        const parentMessages = await Message.find({
-          threadId: parentThreadId,
-          createdAt: { $lte: parentMessage.createdAt },
-        }).sort({ createdAt: 1 });
+    //   if (parentMessage) {
+    //     const parentThreadId = parentMessage.threadId;
 
-        if (parentMessages && parentMessages.length > 0) {
-          allMessages = [...parentMessages];
-        }
-      }
-    }
+    //     const parentMessages = await Message.find({
+    //       threadId: parentThreadId,
+    //       createdAt: { $lte: parentMessage.createdAt },
+    //     }).sort({ createdAt: 1 });
+
+    //     if (parentMessages && parentMessages.length > 0) {
+    //       allMessages = [...parentMessages];
+    //     }
+    //   }
+    // }
 
     const currentMessages = await Message.find({
-      threadId: threadId,
+      threadId: _id,
     }).sort({ createdAt: 1 });
 
-    if (currentMessages && currentMessages.length > 0) {
-      allMessages = [...allMessages, ...currentMessages];
-    }
+    console.log("currentMessages", currentMessages);
+
+    // if (currentMessages && currentMessages.length > 0) {
+    //   allMessages = [...allMessages, ...currentMessages];
+    // }
 
     // Sort all messages by creation time to maintain chronological order
-    allMessages.sort(
-      (a, b) =>
-        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-    );
+    // allMessages.sort(
+    //   (a, b) =>
+    //     new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    // );
 
-    if (allMessages.length === 0) {
+    if (currentMessages.length == 0) {
       return {
         data: null,
         error: "No messages found",
       };
-    }
+    } 
 
     return {
-      data: serializeData(allMessages),
+      data: serializeData(currentMessages),
       error: null,
     };
   } catch (error: any) {
@@ -190,18 +194,12 @@ export const createMessage = async ({
   userQuery,
   isNewThread,
   aiResponse,
-  geminiApiKey,
-  service,
-  model,
   attachment,
 }: {
   threadId: string;
   userQuery: string;
   isNewThread?: boolean;
   aiResponse: { content: string; model: string }[];
-  geminiApiKey?: string;
-  service: string;
-  model: string;
   attachment?: string;
 }) => {
   const session = await auth();
@@ -225,16 +223,13 @@ export const createMessage = async ({
 
     if (isNewThread) {
       const newThread = await createThread({
-        threadId,
+        _id: threadId,
         title: userQuery,
-        geminiApiKey,
-        service,
-        model,
       });
     }
 
     const thread = await Thread.findOne({
-      threadId: threadId,
+      _id: threadId,
       userId: session.user.id,
     });
 
