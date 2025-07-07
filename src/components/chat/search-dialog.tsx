@@ -124,6 +124,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
             ))}
           </div>
 
+
           {debouncedSearch && !isLoading && (!searchResults || searchResults.length === 0) && (
             <div className="p-4 text-center text-muted-foreground text-sm">
               No chats found

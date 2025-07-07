@@ -1,3 +1,4 @@
+import { connect } from 'mongoose';
 import { NextRequest, NextResponse } from "next/server";
 import { generateText, streamText, tool } from "ai";
 import { google } from "@ai-sdk/google";
@@ -5,6 +6,16 @@ import { z } from "zod";
 import { GoogleGenAI, Modality } from "@google/genai";
 import axios from "axios";
 import { auth } from "@/auth";
+import { addMemories, createMem0, getMemories, retrieveMemories } from '@mem0/vercel-ai-provider';
+
+const mem0Config = {
+  mem0ApiKey: 'm0-13sgZ52znoLmTCjg0ffAxDjXhziP694rTz4F9O9i',
+  provider: "Gemini",
+  apiKey: process.env.GEMINI_API_KEY,
+}
+
+const mem0 = createMem0(mem0Config);
+
 
 // Error types for better error handling
 enum ErrorType {
@@ -374,7 +385,17 @@ export async function POST(request: NextRequest) {
       };
       return createErrorStream(serviceError);
     }
- 
+
+
+    const getLastMessage = messages[messages.length - 1];
+
+    console.log("getLastMessage", getLastMessage.content[0].text);
+
+    const memories = await retrieveMemories(getLastMessage.content[0].text, {
+      ...mem0Config,
+      user_id: session?.user?.id,
+    });
+
     let result;
     try {
       result = streamText({
@@ -383,6 +404,10 @@ export async function POST(request: NextRequest) {
           {
             role: "system",
             content: `Your user name is "${userName}" and you are a AI assistant. ${systemPrompt}`,
+          },
+          {
+            role: "assistant",
+            content: `user memories: ${memories}`,
           },
           ...messages,
         ],
@@ -591,6 +616,11 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    await addMemories(messages, {
+      ...mem0Config,
+      user_id: session?.user?.id,
+    });
+
     return new Response(stream, {
       headers: {
         "Content-Type": "text/plain; charset=utf-8",
@@ -601,7 +631,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     // Final catch-all error handler - always return a stream
-    console.error("API route critical error:", error);
+    console.error("API route", error);
     const categorizedError = categorizeError(error, ServiceName.GEMINI);
     return createErrorStream(categorizedError);
   }

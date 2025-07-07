@@ -1,3 +1,4 @@
+'use client'
 import {
   Plus,
   Library,
@@ -8,6 +9,7 @@ import {
   ChevronUp,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import {
   Sidebar,
@@ -31,7 +33,7 @@ const quickActions = [
   {
     title: "New chat",
     icon: Plus,
-    link: "/chat",
+    link: "/",
   },
   {
     title: "Search chats",
@@ -61,6 +63,7 @@ const features = [
 ];
 
 export function AppSidebar() {
+  const router = useRouter()
   return (
     <Sidebar collapsible="icon">
       <div className="flex flex-col h-full">
@@ -84,15 +87,14 @@ export function AppSidebar() {
                         {item.component ? (
                           <item.component />
                         ) : item.link ? (
-                          <Link href={item.link} className="!p-0 !m-0 !w-full">
                             <Button
+                              onClick={() => router.push(item.link)}                             
                               variant="ghost"
                               className="w-full justify-start !text-[15px] !font-light gap-3 px-3"
                             >
                               <item.icon className="!w-5 !h-5" />
-                              <span>{item.title}</span>
+                              <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
                             </Button>
-                          </Link>
                         ) : (
                           <Button
                             variant="ghost"

@@ -16,7 +16,7 @@ export function SearchButton() {
         onClick={() => setOpen(true)}
       >
         <Search className="w-4 h-4" />
-        <span>Search chats</span>
+        <span className="group-data-[collapsible=icon]:hidden">Search chats</span>
       </Button>
       <SearchDialog open={open} onOpenChange={setOpen} />
     </>
