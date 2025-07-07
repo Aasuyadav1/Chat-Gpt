@@ -159,16 +159,6 @@ export const processSpecificT3Tags = async (
                 <span style="font-family: 'consolas', monospace;" class="text-sm font-medium text-foreground">${title}</span>
               </div>
               <div class="flex items-center gap-1">
-                       
-                          ${renderToString(
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="export-btn"
-                            >
-                              <Download size={16} />
-                            </Button>
-                          )}
                             ${renderToString(
                               <Button
                                 variant="ghost"
@@ -190,7 +180,7 @@ export const processSpecificT3Tags = async (
                           
                       </div>
       </div>
-      <div class="relative code-content !bg-background/60 !border-0 !p-3 !pb-0 !rounded-none !overflow-x-auto">
+      <div class="relative code-content !bg-sidebar !border-0 !p-3 !pb-0 !rounded-none !overflow-x-auto">
         ${highlighted.replace(/<pre([^>]*)>/, '<pre$1 class="m-0"')}
       </div>
     </div>
@@ -209,7 +199,7 @@ export const processSpecificT3Tags = async (
       const content = element.textContent;
 
       return `
-        <div class="p-3 !text-white px-4 bg-primary border border-primary/50 t3-tool-loader w-fit flex items-center gap-2 rounded-xl"> ${renderToString(
+        <div class="p-3 !text-white px-4 border border-primary/50 t3-tool-loader w-fit flex items-center gap-2 rounded-xl"> ${renderToString(
           <BiSolidMessageRoundedError className="text-2xl" />
         )} ${content}
         ${renderToString(

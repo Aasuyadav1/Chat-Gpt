@@ -29,12 +29,7 @@ enum ErrorType {
 
 // Service names for error tagging
 enum ServiceName {
-  OPENROUTER = "OpenRouter",
   GEMINI = "Gemini AI",
-  CLOUDINARY = "Cloudinary",
-  TAVILY = "Tavily Search",
-  SYSTEM = "System",
-  AUTHENTICATION = "Authentication",
 }
 
 interface ServiceError {
@@ -45,20 +40,18 @@ interface ServiceError {
   statusCode?: number;
 }
 
-// Helper function to create error tags for frontend
 const createErrorTag = (service: ServiceName, message: string): string => {
   return `<t3-error>${service}: ${message}</t3-error>`;
 };
 
-// Helper function to create info tags
 const createInfoTag = (message: string): string => {
   return `<t3-init-tool>${message}</t3-init-tool>`;
 };
 
 const categorizeError = (
   error: any,
-  defaultService: ServiceName = ServiceName.SYSTEM,
-  modelService?: ServiceName // Optional parameter to specify the intended service for LLM errors
+  defaultService: ServiceName = ServiceName.GEMINI,
+  modelService?: ServiceName
 ): ServiceError => {
   const errorMessage = error.message?.toLowerCase() || "";
   const errorStatus =
@@ -126,78 +119,6 @@ const categorizeError = (
     };
   }
 
-  if (modelService === ServiceName.OPENROUTER) {
-    if (
-      errorMessage.includes("insufficient credits") ||
-      errorMessage.includes("credit limit") ||
-      errorMessage.includes("credits")
-    ) {
-      return {
-        type: ErrorType.INSUFFICIENT_CREDITS,
-        service: ServiceName.OPENROUTER,
-        message: "Insufficient credits in your account",
-        details: errorDetails,
-        statusCode: 402,
-      };
-    }
-    if (
-      errorMessage.includes("payment") ||
-      errorMessage.includes("billing") ||
-      errorStatus === 402
-    ) {
-      return {
-        type: ErrorType.PAYMENT_ERROR,
-        service: ServiceName.OPENROUTER,
-        message: "Payment required or billing issue",
-        details: errorDetails,
-        statusCode: 402,
-      };
-    }
-    if (errorMessage.includes("rate limit") || errorStatus === 429) {
-      return {
-        type: ErrorType.RATE_LIMIT_ERROR,
-        service: ServiceName.OPENROUTER,
-        message: "Rate limit exceeded",
-        details: errorDetails,
-        statusCode: 429,
-      };
-    }
-    if (
-      errorMessage.includes("api key") ||
-      errorMessage.includes("unauthorized") ||
-      errorStatus === 401
-    ) {
-      return {
-        type: ErrorType.API_KEY_ERROR,
-        service: ServiceName.OPENROUTER,
-        message: "Invalid or missing API key",
-        details: errorDetails,
-        statusCode: 401,
-      };
-    }
-    if (
-      errorMessage.includes("model") ||
-      errorMessage.includes("not found") ||
-      errorStatus === 404
-    ) {
-      return {
-        type: ErrorType.MODEL_ERROR,
-        service: ServiceName.OPENROUTER,
-        message: "Model not found or unavailable",
-        details: errorDetails,
-        statusCode: 404,
-      };
-    }
-    // Generic OpenRouter error
-    return {
-      type: ErrorType.OPENROUTER_ERROR,
-      service: ServiceName.OPENROUTER,
-      message: "Service error occurred",
-      details: errorDetails,
-      statusCode: errorStatus || 500,
-    };
-  }
-
   // General network/timeout errors, relevant for any service
   if (
     errorMessage.includes("network") ||
@@ -220,22 +141,6 @@ const categorizeError = (
       message: "Request timeout",
       details: errorDetails,
       statusCode: 408,
-    };
-  }
-
-  // Fallback for general errors if specific service keywords aren't found
-  // and modelService wasn't explicitly provided or didn't match.
-  if (
-    errorMessage.includes("authentication") ||
-    errorMessage.includes("forbidden") ||
-    errorStatus === 403
-  ) {
-    return {
-      type: ErrorType.AUTHENTICATION_ERROR,
-      service: ServiceName.AUTHENTICATION,
-      message: "Authentication failed",
-      details: errorDetails,
-      statusCode: 403,
     };
   }
 
@@ -453,56 +358,27 @@ RESTRICTIONS:
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  console.log(body);
   const messages = body.messages;
   const isWebSearch = body.isWebSearch;
   const geminiApiKey = body.geminiApiKey;
-  const model = body.model;
   const session = await auth();
-  const service: ServiceName =
-    body.service === "openrouter" ? ServiceName.OPENROUTER : ServiceName.GEMINI;
+  const service: ServiceName = ServiceName.GEMINI;
   const userName = session?.user?.name || "User";
   try {
-    // Authentication check
-    try {
-      if (service === ServiceName.OPENROUTER) {
-        const error: ServiceError = {
-          type: ErrorType.AUTHENTICATION_ERROR,
-          service: ServiceName.AUTHENTICATION,
-          message: "Please log in and configure your OpenRouter API key",
-          statusCode: 401,
-        };
-        return createErrorStream(error);
-      }
-    } catch (error: any) {
-      const serviceError: ServiceError = {
-        type: ErrorType.AUTHENTICATION_ERROR,
-        service: ServiceName.AUTHENTICATION,
-        message: "Authentication service unavailable",
-        details: error.message,
-        statusCode: 503,
-      };
-      return createErrorStream(serviceError);
-    }
     if (!messages || !Array.isArray(messages)) {
       const serviceError: ServiceError = {
         type: ErrorType.VALIDATION_ERROR,
-        service: ServiceName.SYSTEM,
+        service: ServiceName.GEMINI,
         message: "Messages array is required",
         statusCode: 400,
       };
       return createErrorStream(serviceError);
     }
-
-   
-    // Create streaming response with comprehensive error handling
-    process.env.GOOGLE_GENERATIVE_AI_API_KEY =
-      geminiApiKey 
+ 
     let result;
     try {
       result = streamText({
-        model:
-          google(`models/${model.split("/")[1].trim()}`),
+        model: google(`models/gemini-2.0-flash-001`),
         messages: [
           {
             role: "system",
@@ -608,12 +484,13 @@ export async function POST(request: NextRequest) {
           }),
         },
       });
+      console.log("result from the ai", result);
     } catch (error: any) {
       console.error("StreamText initialization error:", error);
       // Pass the 'service' variable to help categorize the LLM error correctly
       const categorizedError = categorizeError(
         error,
-        ServiceName.SYSTEM,
+        ServiceName.GEMINI,
         service
       );
       return createErrorStream(categorizedError);
@@ -660,7 +537,7 @@ export async function POST(request: NextRequest) {
               } else if (delta.type === "error") {
                 const categorizedError = categorizeError(
                   delta.error,
-                  ServiceName.SYSTEM, // Default, but will be overridden by detailed error parsing
+                  ServiceName.GEMINI, // Default, but will be overridden by detailed error parsing
                   service // Pass the current service to categorize
                 );
                 const errorMsg = createErrorTag(
@@ -674,7 +551,7 @@ export async function POST(request: NextRequest) {
               console.error("Delta processing error:", deltaError);
               const categorizedError = categorizeError(
                 deltaError,
-                ServiceName.SYSTEM
+                ServiceName.GEMINI
               );
               const errorMsg = createErrorTag(
                 categorizedError.service,
@@ -691,7 +568,7 @@ export async function POST(request: NextRequest) {
           console.error("Stream processing error:", streamError);
           const categorizedError = categorizeError(
             streamError,
-            ServiceName.SYSTEM
+            ServiceName.GEMINI
           );
           const errorMsg = createErrorTag(
             categorizedError.service,
@@ -725,7 +602,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     // Final catch-all error handler - always return a stream
     console.error("API route critical error:", error);
-    const categorizedError = categorizeError(error, ServiceName.SYSTEM);
+    const categorizedError = categorizeError(error, ServiceName.GEMINI);
     return createErrorStream(categorizedError);
   }
 }

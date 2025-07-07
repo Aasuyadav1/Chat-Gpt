@@ -8,8 +8,8 @@ import { FaWandMagicSparkles } from "react-icons/fa6";
 import chatStore from "@/stores/chat.store";
 import { FaArrowUp } from "react-icons/fa";
 import { Input } from "../ui/input";
-// import { message } from "antd";
-// import { toast } from "sonner";
+import { message } from "antd";
+import { toast } from "sonner";
 import { useChatStream } from "@/hooks/use-chat-stream";
 import { Button } from "../ui/button";
 import { updateSelectedText } from "@/action/message.action";
@@ -375,48 +375,46 @@ const TextSelectionDropdown = () => {
     };
 
     try {
-      // const response = await sendMessage({
-      //   messages: promptMessage,
-      //   model: currentModel,
-      //   service: currentService,
-      //   geminiApiKey: userData?.geminiApiKey || "",
-      // });
-      // const generateResponse = await updateSelectedText({
-      //   messageId: findMessage?._id || "",
-      //   subMessageId: findSubMessage?._id || "",
-      //   content: response ? response.trim() : "",
-      // });
+      const response = await sendMessage({
+        messages: promptMessage,
+        model: "gemini-2.0-flash-exp",
+      });
+      const generateResponse = await updateSelectedText({
+        messageId: findMessage?._id || "",
+        subMessageId: findSubMessage?._id || "",
+        content: response ? response.trim() : "",
+      });
 
-      // if (generateResponse.error) {
-      //   toast.error("Failed to regenerate response");
-      //   return;
-      // }
+      if (generateResponse.error) {
+        toast.error("Failed to regenerate response");
+        return;
+      }
 
-      // if (response?.trim() !== "") {
-      //   chatStore?.setState({
-      //     messages: messages?.map((message: Message) => {
-      //       if (message._id === messageId) {
-      //         return {
-      //           ...message,
-      //           aiResponse:
-      //             message.aiResponse?.map((aiRes: any) => {
-      //               // Update the specific AI response that matches the subMessageId
-      //               if (aiRes._id === subMessageId) {
-      //                 return {
-      //                   ...aiRes,
-      //                   content: response,
-      //                   // Optionally update the model if needed
-      //                   model: currentModel || aiRes.model,
-      //                 };
-      //               }
-      //               return aiRes;
-      //             }) || [],
-      //         };
-      //       }
-      //       return message;
-      //     }),
-      //   });
-      // }
+      if (response?.trim() !== "") {
+        chatStore?.setState({
+          messages: messages?.map((message: Message) => {
+            if (message._id === messageId) {
+              return {
+                ...message,
+                aiResponse:
+                  message.aiResponse?.map((aiRes: any) => {
+                    // Update the specific AI response that matches the subMessageId
+                    if (aiRes._id === subMessageId) {
+                      return {
+                        ...aiRes,
+                        content: response,
+                        // Optionally update the model if needed
+                        model: aiRes.model,
+                      };
+                    }
+                    return aiRes;
+                  }) || [],
+              };
+            }
+            return message;
+          }),
+        });
+      }
 
       // Clear states after successful update
       handleAction(action);

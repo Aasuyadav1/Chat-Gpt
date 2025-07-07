@@ -11,9 +11,8 @@ import chatStore from "@/stores/chat.store";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 import { processSpecificT3Tags } from "@/lib/chat-parser";
 import { branchThread } from "@/action/thread.action";
-// import BranchOffIcon from "../../../public/icons/branch-off";
 import { FiLoader } from "react-icons/fi";
-// import { toast } from "sonner";
+import { toast } from "sonner";
 // import DevClipboard from "../global-cmp/dev-clipboard";
 // import userStore from "@/stores/user.store";
 // import DevTooltip from "../global-cmp/dev-tooltip";
@@ -65,87 +64,68 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
   const queryClient = useQueryClient();
   const { messages, setIsRegenerate } = chatStore();
   // const { currentModel, userData, currentService } = userStore();
-  // const retryMessage = async () => {
-  //   setIsRegenerate(true);
-  //   const attachment = message?.attachment;
-  //   const trimmedQuery = message?.userQuery;
+  const retryMessage = async () => {
+    setIsRegenerate(true);
+    const attachment = message?.attachment;
+    const trimmedQuery = message?.userQuery;
 
-  //   if (!trimmedQuery?.trim()) {
-  //     // console.log("No query to retry");
-  //     return;
-  //   }
+    if (!trimmedQuery?.trim()) {
+      // console.log("No query to retry");
+      return;
+    }
 
-  //   const promptMessage: any = {
-  //     role: "user",
-  //     content: [
-  //       {
-  //         type: attachment ? "image" : "text",
-  //         mimeType: attachment ? "image/jpeg" : "text/plain",
-  //         text: trimmedQuery,
-  //         image: attachment ? new URL(attachment) : undefined,
-  //       },
-  //     ],
-  //   };
+    const promptMessage: any = {
+      role: "user",
+      content: [
+        {
+          type: attachment ? "image" : "text",
+          mimeType: attachment ? "image/jpeg" : "text/plain",
+          text: trimmedQuery,
+          image: attachment ? new URL(attachment) : undefined,
+        },
+      ],
+    };
 
-  //   try {
-  //     const response = await sendMessage({
-  //       messages: promptMessage,
-  //       // model: currentModel,
-  //       // service: currentService,
-  //       // geminiApiKey: userData?.geminiApiKey || "",
-  //     });
+    try {
+      const response = await sendMessage({
+        messages: promptMessage,
+        model: "gemini-2.5-flash",
+      });
 
-  //     const generateResponse = await regenerateAnotherResponse({
-  //       messageId: message?._id || "",
-  //       aiResponse: { content: response, model: currentModel },
-  //     });
-  //     if (generateResponse.error) {
-  //       toast.error("Failed to regenerate response");
-  //     }
-  //     if (response?.trim() !== "") {
-  //       chatStore?.setState({
-  //         messages: messages?.map((message: Message) => {
-  //           if (message._id === messageId) {
-  //             return {
-  //               ...message,
-  //               aiResponse: [
-  //                 ...(message?.aiResponse || []),
-  //                 {
-  //                   content: response,
-  //                   model: currentModel,
-  //                   _id: generateResponse?.data?.aiResponse?.[
-  //                     generateResponse?.data?.aiResponse?.length - 1
-  //                   ]?._id,
-  //                 },
-  //               ],
-  //             };
-  //           }
-  //           return message;
-  //         }),
-  //       });
-  //     }
-  //     setResponseIndex(generateResponse?.data?.aiResponse?.length - 1 || 0);
-  //   } catch (err) {
-  //     console.error("Retry failed:", err);
-  //   }
-  // };
-
-  const { mutate: handleBranch, isPending: isBranching } = useMutation({
-    mutationFn: async (messageId: string) => {
-      const response = await branchThread({ messageId });
-      if (response.error) {
-        throw new Error("Error while branching off");
+      const generateResponse = await regenerateAnotherResponse({
+        messageId: message?._id || "",
+        aiResponse: { content: response, model: "gemini-2.5-flash" },
+      });
+      if (generateResponse.error) {
+        toast.error("Failed to regenerate response");
       }
-      return response.data;
-    },
-    onError: (error: Error) => {
-      // toast.error(error.message);
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["threads"] });
-      router.push(`/chat/${data?.threadId}`);
-    },
-  });
+      if (response?.trim() !== "") {
+        chatStore?.setState({
+          messages: messages?.map((message: Message) => {
+            if (message._id === messageId) {
+              return {
+                ...message,
+                aiResponse: [
+                  ...(message?.aiResponse || []),
+                  {
+                    content: response,
+                    model: "gemini-2.5-flash",
+                    _id: generateResponse?.data?.aiResponse?.[
+                      generateResponse?.data?.aiResponse?.length - 1
+                    ]?._id,
+                  },
+                ],
+              };
+            }
+            return message;
+          }),
+        });
+      }
+      setResponseIndex(generateResponse?.data?.aiResponse?.length - 1 || 0);
+    } catch (err) {
+      console.error("Retry failed:", err);
+    }
+  };
 
   return (
     <div className="flex items-center gap-1">
@@ -180,27 +160,27 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
         afterCopy={<Check aria-hidden="true" />}
       /> */}
 
-      {role === "assistant" && (
+      {/* {role === "assistant" && (
         // <DevTooltip tipData="Branch off">
           <Button
             variant="ghost"
             size="icon"
             className="h-8 w-8 text-xs"
             aria-label="Branch off message"
-            onClick={() => handleBranch(messageId as string)}
+            // onClick={() => handleBranch(messageId as string)}
             data-state="closed"
           >
             <div className="relative size-4 *:text-muted-foreground">
               {isBranching ? (
                 <FiLoader className="animate-spin" />
-              ) : (
+              ) : ( 
                 <div>branch</div>
                 // <BranchOffIcon />
               )}
             </div>
           </Button>
         // </DevTooltip>
-      )}
+      )} */}
 
       {role === "assistant" && (
         // <DevTooltip tipData="Retry message">
@@ -210,7 +190,7 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
             disabled={isLoading}
             className="h-8 w-8 text-xs"
             aria-label="Retry message"
-            // onClick={retryMessage}
+            onClick={retryMessage}
             data-action="retry"
             data-state="closed"
           >
@@ -225,7 +205,7 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
         // </DevTooltip>
       )}
 
-      {/* {role === "user" && (
+      {role === "user" && (
         // <DevTooltip tipData="Edit message">
           <Button
             variant="ghost"
@@ -238,7 +218,7 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
             <SquarePen className="h-4 w-4" aria-hidden="true" />
           </Button>
         // </DevTooltip>
-      )} */}
+      )}
 
       {/* {role === "assistant" && (
         <div className="flex items-center text-nowrap pointer-events-none select-none gap-1 text-xs text-muted-foreground capitalize">

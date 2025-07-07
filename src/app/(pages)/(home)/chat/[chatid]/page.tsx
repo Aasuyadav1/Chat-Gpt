@@ -1,43 +1,74 @@
+"use client";
 import React from "react";
 import ChatInput from "@/components/chat/chat-input";
 import { getMessages } from "@/action/message.action";
 import DisplayMessage from "@/components/global/display-message";
 import MessagePair from "@/components/chat/message-container";
+import { useParams } from "next/navigation";
+import { useEffect, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
+import chatStore from "@/stores/chat.store";
+import TextSelectionDropdown from "@/components/chat/selection-dropdown";
 
-const page = async ({ params }: { params: Promise<{ chatid: string }> }) => {
-  const { chatid } = await params;
-  const messages = await getMessages({ _id: chatid });
-  console.log("from the database messages", messages);
+const page = () => {
+  const params = useParams();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { messages, setMessages, isLoading, isRegenerate } = chatStore();
+  const { data } = useQuery({
+    queryKey: ["thread-messages", params.chatid],
+    queryFn: async () => {
+      const posts = await getMessages({ _id: params.chatid as string });
+      posts.data && setMessages(posts.data);
+      return posts.data;
+    },
+    staleTime: 0,
+    refetchOnWindowFocus: false,
+    enabled: !!params.chatid,
+  });
+
+  // Auto-scroll to bottom when messages or response updates
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "end",
+    });
+  };
+
+  // Scroll when response updates (streaming)
+  useEffect(() => {
+    if (!isRegenerate) {
+      scrollToBottom();
+    }
+  }, [isLoading, messages]);
 
   return (
-    <div className="flex h-full flex-col gap-4 justify-center items-center">
-      <div className="w-full h-full max-w-[710px] relative">
-        <div className="py-10">
-          <p className="text-center text-sm my-4 opacity-80">All messages</p>
-          <DisplayMessage initialMessages={messages} />
-          <div
-            role="log"
-            id="text-selection-container"
-            aria-label="Chat messages"
-            aria-live="polite"
-            className="mx-auto flex w-full max-w-3xl flex-col space-y-12 px-4 pb-[calc(100vh-25rem)] pt-10"
-          >
-            {/* Render stored messages */}
-            {messages &&
-              Array.isArray(messages.data) &&
-              messages.data.length > 0 &&
-              messages.data.map((message: any, index: number) => (
-                <MessagePair key={index} message={message} />
-              ))}
-          </div>
+    <div className="overflow-hidden">
+      <div className="mt-10 py-10 overflow-y-auto h-[calc(100vh-230px)]">
+        <TextSelectionDropdown />
+
+        <div
+          role="log"
+          id="text-selection-container"
+          aria-label="Chat messages"
+          aria-live="polite"
+          className="mx-auto flex w-full max-w-[710px] flex-col pb-20 space-y-12 px-2"
+        >
+          {/* Render stored messages */}
+          {messages &&
+            Array.isArray(messages) &&
+            messages.length > 0 &&
+            messages.map((message: any, index: number) => (
+              <MessagePair key={index} message={message} />
+            ))}
         </div>
-        <div className="absolute z-10 bg-background rounded-tl-3xl rounded-tr-3xl -bottom-2 left-0 w-full">
-          <ChatInput />
-          <p className="text-center text-sm my-4 opacity-80">
-            ChatGPT can make mistakes. Check important info. See Cookie
-            Preferences.
-          </p>
-        </div>
+      </div>
+      <div ref={messagesEndRef} />
+      <div className="z-10 bg-background rounded-tl-3xl max-w-[710px] mx-auto rounded-tr-3xl w-full">
+        <ChatInput />
+        <p className="text-center my-4 text-sm opacity-80">
+          ChatGPT can make mistakes. Check important info. See Cookie
+          Preferences.
+        </p>
       </div>
     </div>
   );

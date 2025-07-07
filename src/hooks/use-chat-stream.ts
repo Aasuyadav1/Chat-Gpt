@@ -17,13 +17,9 @@ interface UseStreamResponseReturn {
   sendMessage: ({
     messages,
     model,
-    service,
-    geminiApiKey,
   }: {
     messages: AiMessage[];
     model: string;
-    service: string;
-    geminiApiKey: string;
   }) => Promise<string>;
   clearResponse: () => void;
 }
@@ -37,13 +33,9 @@ export function useChatStream(): UseStreamResponseReturn {
     async ({
       messages,
       model,
-      service,
-      geminiApiKey,
     }: {
       messages: AiMessage[];
       model: string;
-      service: string;
-      geminiApiKey: string;
     }): Promise<string> => {
       if (isLoading) return "";
 
@@ -60,8 +52,6 @@ export function useChatStream(): UseStreamResponseReturn {
           body: JSON.stringify({
             messages:[messages],
             model,
-            service,
-            geminiApiKey,
           }),
         });
 

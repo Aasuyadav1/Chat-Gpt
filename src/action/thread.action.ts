@@ -25,11 +25,6 @@ export const getThread = async () => {
   try {
     await connectDB();
 
-    // Get all folders
-    const folders = await Folder.find({
-      userId: session.user.id,
-    }).sort({ createdAt: -1 });
-
     // Get all threads with populated folder and message data
     const threads = await Thread.find({
       userId: session.user.id,
@@ -38,90 +33,21 @@ export const getThread = async () => {
         path: "parentChatId",
         model: "Message",
       })
-      .populate({
-        path: "parentFolderId",
-        model: "Folder",
-      })
       .sort({ createdAt: -1 });
 
-    // Debug: Log threads to check parentFolderId
-    console.log(
-      "All threads:",
-      threads.map((thread) => ({
-        _id: thread._id,
-        title: thread.title,
-        parentFolderId: thread.parentFolderId
-          ? thread.parentFolderId._id
-          : null,
-      }))
-    );
 
-    // Separate threads into folders and non-folder threads
-    const threadsInFolders = threads.filter(
-      (thread) => thread.parentFolderId != null
-    );
-    const threadsNotInFolders = threads.filter(
-      (thread) => thread.parentFolderId == null
-    );
-
-    // Debug: Log threads with invalid parentFolderId
-    const invalidThreads = threadsInFolders.filter(
-      (thread) =>
-        !folders.some((folder) => folder._id.equals(thread.parentFolderId))
-    );
-    console.log("Threads with invalid parentFolderId:", invalidThreads);
-
-    // Organize threads by folders
-    const folderThreads = folders.map((folder) => ({
-      folder: serializeData(folder),
-      threads: serializeData(
-        threadsInFolders.filter(
-          (thread) =>
-            thread.parentFolderId && thread.parentFolderId.equals(folder._id)
-        )
-      ),
-    }));
-
-    // Categorize non-folder threads
-    const today = new Date();
-    const startOfToday = new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate()
-    );
-    const endOfToday = new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate() + 1
-    );
-
-    const pinnedThreads = threadsNotInFolders.filter(
+    const pinnedThreads = threads.filter(
       (thread) => thread.isPinned === true
     );
 
-    const todayThreads = threadsNotInFolders.filter((thread) => {
-      const threadDate = new Date(thread.createdAt);
-      return (
-        threadDate >= startOfToday &&
-        threadDate < endOfToday &&
-        thread.isPinned !== true
-      );
-    });
-
-    const weekThreads = threadsNotInFolders.filter((thread) => {
-      const threadDate = new Date(thread.createdAt);
-      return (
-        !(threadDate >= startOfToday && threadDate < endOfToday) &&
-        thread.isPinned !== true
-      );
-    });
+    const allThreadsWithOutPinned = threads.filter(
+      (thread) => thread.isPinned === false
+    );
 
     return {
       data: {
-        folders: folderThreads,
         pin: serializeData(pinnedThreads),
-        today: serializeData(todayThreads),
-        week: serializeData(weekThreads),
+        chat: serializeData(allThreadsWithOutPinned),
       },
       error: null,
     };
@@ -215,7 +141,7 @@ export const pinThread = async ({ threadId }: { threadId: string }) => {
     await connectDB();
 
     const thread = await Thread.findOne({
-      threadId: threadId,
+      _id: threadId,
       userId: session.user.id,
     });
 
@@ -255,7 +181,7 @@ export const deleteThread = async ({ threadId }: { threadId: string }) => {
     await connectDB();
 
     const thread = await Thread.findOne({
-      threadId: threadId,
+      _id: threadId,
       userId: session.user.id,
     });
 
@@ -266,7 +192,7 @@ export const deleteThread = async ({ threadId }: { threadId: string }) => {
       };
     }
 
-    await Thread.deleteOne({ threadId: threadId });
+    await Thread.deleteOne({ _id: threadId });
 
     // await Message.deleteMany({ threadId: threadId });
 
@@ -364,7 +290,7 @@ export const renameThread = async ({
     await connectDB();
 
     const thread = await Thread.findOne({
-      threadId: threadId,
+      _id: threadId,
       userId: session.user.id,
     });
 

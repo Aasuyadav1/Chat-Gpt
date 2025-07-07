@@ -1,6 +1,5 @@
 import {
   Plus,
-  Search,
   Library,
   PlayCircle,
   Grid,
@@ -8,6 +7,7 @@ import {
   Volume2,
   ChevronUp,
 } from "lucide-react";
+import Link from "next/link";
 
 import {
   Sidebar,
@@ -23,17 +23,20 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import SidebarThreads from "./sidebar-thread";
+import { SearchButton } from "@/components/chat/search-button";
 
 // Menu items for quick actions (top 3 icons when collapsed)
 const quickActions = [
   {
     title: "New chat",
     icon: Plus,
-    shortcut: "Ctrl+Shift+O",
+    link: "/chat",
   },
   {
     title: "Search chats",
-    icon: Search,
+    icon: null, // We'll handle this separately
+    component: SearchButton,
   },
   {
     title: "Library",
@@ -57,15 +60,6 @@ const features = [
   },
 ];
 
-// Recent chats
-const recentChats = [
-  "New chat",
-  "New chat",
-  "New chat",
-  "mem0 chat memory confusion",
-  "Portfolio update meaning",
-];
-
 export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
@@ -87,25 +81,33 @@ export function AppSidebar() {
                   {quickActions.map((item) => (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton asChild>
-                        <Button
-                          variant="ghost"
-                          className="w-full justify-start !text-[15px] !font-light gap-3 px-3"
-                        >
-                          <item.icon className="!w-5 !h-5" />
-                          <span>{item.title}</span>
-                          {item.shortcut && (
-                            <span className="ml-auto text-xs opacity-60 group-data-[collapsible=icon]:hidden">
-                              {item.shortcut}
-                            </span>
-                          )}
-                        </Button>
+                        {item.component ? (
+                          <item.component />
+                        ) : item.link ? (
+                          <Link href={item.link} className="!p-0 !m-0 !w-full">
+                            <Button
+                              variant="ghost"
+                              className="w-full justify-start !text-[15px] !font-light gap-3 px-3"
+                            >
+                              <item.icon className="!w-5 !h-5" />
+                              <span>{item.title}</span>
+                            </Button>
+                          </Link>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            className="w-full justify-start !text-[15px] !font-light gap-3 px-3"
+                          >
+                            <item.icon className="!w-5 !h-5" />
+                            <span>{item.title}</span>
+                          </Button>
+                        )}
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ))}
                 </SidebarMenu>
-
                 {/* Features - Hidden when collapsed */}
-                <SidebarMenu className="group-data-[collapsible=icon]:hidden">
+                {/* <SidebarMenu className="group-data-[collapsible=icon]:hidden">
                   {features.map((item) => (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton asChild>
@@ -119,28 +121,8 @@ export function AppSidebar() {
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ))}
-                </SidebarMenu>
-
-                {/* Recent Chats - Hidden when collapsed */}
-                <div className="space-y-2 group-data-[collapsible=icon]:hidden">
-                  <SidebarGroupLabel className="px-3 text-[15px] font-light">
-                    Chats
-                  </SidebarGroupLabel>
-                  <SidebarMenu>
-                    {recentChats.map((chat, index) => (
-                      <SidebarMenuItem key={index}>
-                        <SidebarMenuButton asChild>
-                          <Button
-                            variant="ghost"
-                            className="w-full justify-start px-3 !text-[15px] font-light"
-                          >
-                            <span className="truncate">{chat}</span>
-                          </Button>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
-                  </SidebarMenu>
-                </div>
+                </SidebarMenu> */}
+                <SidebarThreads />
               </SidebarGroupContent>
             </ScrollArea>
           </SidebarGroup>

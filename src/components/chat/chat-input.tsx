@@ -1,5 +1,4 @@
 "use client";
-
 import React, { KeyboardEvent, useState, useRef } from "react";
 import { ArrowUp, Globe, Paperclip, X, File } from "lucide-react";
 import { Button } from "../ui/button";
@@ -9,6 +8,9 @@ import chatStore from "@/stores/chat.store";
 import mongoose from "mongoose";
 import { createThread } from "@/action/thread.action";
 import { createMessage } from "@/action/message.action";
+import { useCloudinaryUpload } from "@/hooks/use-upload";
+import { useQueryClient } from "@tanstack/react-query";
+import { useStreamResponse } from "@/hooks/use-response-stream";
 
 interface ChatInputProps {
   placeholder?: string;
@@ -27,6 +29,7 @@ function ChatInput({
 }: ChatInputProps) {
   const params = useParams();
   const router = useRouter();
+  const { sendMessage } = useStreamResponse();
 
   const {
     setQuery,
@@ -40,12 +43,16 @@ function ChatInput({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [attachmentUrl, setAttachmentUrl] = useState<string>("");
-  const [attachmentPreview, setAttachmentPreview] = useState<{
-    name: string;
-    type: string;
-    url: string;
-  } | null>(null);
+   // Cloudinary upload hook
+   const { uploadState, uploadFile, resetUpload } = useCloudinaryUpload();
+   const [attachmentUrl, setAttachmentUrl] = useState<string>("");
+   const [attachmentPreview, setAttachmentPreview] = useState<{
+     name: string;
+     type: string;
+     url: string;
+   } | null>(null);
+
+  const queryClient = useQueryClient();
 
   const generateObjectId = async () => {
     return new mongoose.Types.ObjectId().toString();
@@ -54,11 +61,14 @@ function ChatInput({
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
+      if (!query.trim() || isLoading || uploadState.isUploading) return;
+      setQuery(query.trim());
+      handleSubmit();
     }
   };
 
-  // Handle file selection and upload
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+   // Handle file selection and upload
+   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -71,15 +81,17 @@ function ChatInput({
       });
 
       // Upload to Cloudinary
+      const uploadResult = await uploadFile(file);
 
       // Set the Cloudinary URL
+      setAttachmentUrl(uploadResult.secure_url);
 
       // Update preview with Cloudinary URL
       setAttachmentPreview((prev) =>
         prev
           ? {
               ...prev,
-              url: URL.createObjectURL(file),
+              url: uploadResult.secure_url,
             }
           : null
       );
@@ -95,108 +107,137 @@ function ChatInput({
   const handleRemoveAttachment = () => {
     setAttachmentPreview(null);
     setAttachmentUrl("");
+    resetUpload();
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
   };
 
   // Handle form submission
+  // const handleSubmit = async () => {
+  //   if (!query.trim()) return; // don't submit empty messages
+
+  //   handleRemoveAttachment();
+
+  //   try {
+  //     let objectId = "";
+  //     if (isNewThread) {
+  //       objectId = await generateObjectId();
+  //       router.push(`/chat/${objectId}`);
+  //       console.log("new thread created", objectId);
+  //     }
+
+  //     // add the user message to the messages array
+  //     setMessages((prev: any) => [
+  //       ...prev,
+  //       {
+  //         role: "user",
+  //         content: query,
+  //       },
+  //     ]);
+
+  //     // clear the query input
+  //     setQuery("");
+
+  //     // add initial assistant message
+  //     setMessages((prev: any) => [
+  //       ...prev,
+  //       {
+  //         role: "assistant",
+  //         content: "",
+  //       },
+  //     ]);
+
+  //     const response = await fetch("/api/chat/new", {
+  //       method: "POST",
+  //       body: JSON.stringify({
+  //         messages: [
+  //           {
+  //             role: "user",
+  //             content: query,
+  //           },
+  //         ],
+  //       }),
+  //     });
+
+  //     if (!response.ok) {
+  //       throw new Error(`HTTP error! status: ${response.status}`);
+  //     }
+
+  //     const reader = response.body?.getReader();
+  //     const decoder = new TextDecoder();
+
+  //     if (!reader) {
+  //       throw new Error("Response body is not readable");
+  //     }
+
+  //     let assistantResponse = "";
+
+  //     while (true) {
+  //       const { done, value } = await reader.read();
+
+  //       if (done) break;
+
+  //       const chunk = decoder.decode(value, { stream: true });
+  //       assistantResponse += chunk;
+
+  //       // update the LAST message (assistant) with accumulated content
+  //       setMessages((prev: any) => {
+  //         const updated = [...prev];
+  //         updated[updated.length - 1] = {
+  //           role: "assistant",
+  //           content: assistantResponse,
+  //         };
+  //         return updated;
+  //       });
+  //     }
+
+  //     if (isNewThread) {
+  //       const newThread = await createThread({
+  //         _id: objectId,
+  //         title: query,
+  //       });
+  //     }
+
+  //     const message = await createMessage({
+  //       threadId: params.chatid as string,
+  //       userQuery: query,
+  //       aiResponse: [{ content: assistantResponse, model: "Gemini 2.5 Flash" }],
+  //     });
+
+  //     console.log("message created", message);
+  //   } catch (error) {
+  //     console.error("Error sending message:", error);
+  //     // Remove the empty assistant message on error
+  //     setMessages((prev: any) => prev.slice(0, -1));
+  //   }
+  // };
+
+  // Handle form submission
   const handleSubmit = async () => {
-    if (!query.trim()) return; // don't submit empty messages
-
-    handleRemoveAttachment();
-
-    try {
-      if (isNewThread) {
-        const objectId = await generateObjectId();
-        const newThread = await createThread({
-          _id: objectId,
-          title: query,
-        });
-        router.push(`/chat/${objectId}`);
-      }
-
-      // add the user message to the messages array
-      setMessages((prev: any) => [
-        ...prev,
-        {
-          role: "user",
-          content: query,
-        },
-      ]);
-
-      // clear the query input
-      setQuery("");
-
-      // add initial assistant message
-      setMessages((prev: any) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: "",
-        },
-      ]);
-
-      const response = await fetch("/api/chat/new", {
-        method: "POST",
-        body: JSON.stringify({
-          messages: [
-            {
-              role: "user",
-              content: query,
-            },
-          ],
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-
-      if (!reader) {
-        throw new Error("Response body is not readable");
-      }
-
-      let assistantResponse = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-
-        if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
-        assistantResponse += chunk;
-
-        // update the LAST message (assistant) with accumulated content
-        setMessages((prev: any) => {
-          const updated = [...prev];
-          updated[updated.length - 1] = {
-            role: "assistant",
-            content: assistantResponse,
-          };
-          return updated;
-        });
-      }
-
-      const message = await createMessage({
-        threadId: params.chatid as string,
-        userQuery: query,
-        aiResponse: [{ content: assistantResponse, model: "Gemini 2.5 Flash" }],
-      });
-
-      console.log("message created", message);
-    } catch (error) {
-      console.error("Error sending message:", error);
-      // Remove the empty assistant message on error
-      setMessages((prev: any) => prev.slice(0, -1));
+    
+    const generatedId = await generateObjectId();
+    setIsRegenerate(false);
+    if (!params.chatid) {
+      setMessages([]);
+      router.push(`/chat/${generatedId}`);
     }
+    await sendMessage({
+      chatid: (params.chatid as string) || generatedId,
+      attachmentUrl: attachmentUrl,
+      resetAttachment: handleRemoveAttachment,
+      isNewThread: !params.chatid,
+    });
+
+    if (!params.chatid) {
+      queryClient.invalidateQueries({ queryKey: ["threads"] });
+    }
+    handleRemoveAttachment();
   };
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!query.trim() || isLoading || uploadState.isUploading) return;
     handleSubmit();
   };
 
