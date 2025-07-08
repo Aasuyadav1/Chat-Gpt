@@ -11,7 +11,6 @@ export const generateAiResponse = async ({
     if (!message) {
       throw new Error("Message is required");
     }
-    process.env.GOOGLE_GENERATIVE_AI_API_KEY;
 
     const { text } = await generateText({
       model: google("gemini-2.5-flash"),
