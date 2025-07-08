@@ -1,16 +1,21 @@
 "use client";
 import React, { KeyboardEvent, useState, useRef } from "react";
-import { ArrowUp, Globe, Paperclip, X, File } from "lucide-react";
+import { ArrowUp, Globe, Paperclip, X, File, Plus, Settings, Image } from "lucide-react";
 import { Button } from "../ui/button";
 import { useRouter } from "next/navigation";
 import { useParams } from "next/navigation";
 import chatStore from "@/stores/chat.store";
 import mongoose from "mongoose";
-import { createThread } from "@/action/thread.action";
-import { createMessage } from "@/action/message.action";
 import { useCloudinaryUpload } from "@/hooks/use-upload";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStreamResponse } from "@/hooks/use-response-stream";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "../ui/dropdown-menu";
+import { X as XIcon } from "lucide-react";
 
 interface ChatInputProps {
   placeholder?: string;
@@ -54,6 +59,8 @@ function ChatInput({
 
   const queryClient = useQueryClient();
 
+  const [selectedTool, setSelectedTool] = useState<null | "image" | "web">(null);
+
   const generateObjectId = async () => {
     return new mongoose.Types.ObjectId().toString();
   };
@@ -67,7 +74,6 @@ function ChatInput({
     }
   };
 
-   // Handle file selection and upload
    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -103,7 +109,6 @@ function ChatInput({
     }
   };
 
-  // Remove attachment
   const handleRemoveAttachment = () => {
     setAttachmentPreview(null);
     setAttachmentUrl("");
@@ -113,107 +118,6 @@ function ChatInput({
     }
   };
 
-  // Handle form submission
-  // const handleSubmit = async () => {
-  //   if (!query.trim()) return; // don't submit empty messages
-
-  //   handleRemoveAttachment();
-
-  //   try {
-  //     let objectId = "";
-  //     if (isNewThread) {
-  //       objectId = await generateObjectId();
-  //       router.push(`/chat/${objectId}`);
-  //       console.log("new thread created", objectId);
-  //     }
-
-  //     // add the user message to the messages array
-  //     setMessages((prev: any) => [
-  //       ...prev,
-  //       {
-  //         role: "user",
-  //         content: query,
-  //       },
-  //     ]);
-
-  //     // clear the query input
-  //     setQuery("");
-
-  //     // add initial assistant message
-  //     setMessages((prev: any) => [
-  //       ...prev,
-  //       {
-  //         role: "assistant",
-  //         content: "",
-  //       },
-  //     ]);
-
-  //     const response = await fetch("/api/chat/new", {
-  //       method: "POST",
-  //       body: JSON.stringify({
-  //         messages: [
-  //           {
-  //             role: "user",
-  //             content: query,
-  //           },
-  //         ],
-  //       }),
-  //     });
-
-  //     if (!response.ok) {
-  //       throw new Error(`HTTP error! status: ${response.status}`);
-  //     }
-
-  //     const reader = response.body?.getReader();
-  //     const decoder = new TextDecoder();
-
-  //     if (!reader) {
-  //       throw new Error("Response body is not readable");
-  //     }
-
-  //     let assistantResponse = "";
-
-  //     while (true) {
-  //       const { done, value } = await reader.read();
-
-  //       if (done) break;
-
-  //       const chunk = decoder.decode(value, { stream: true });
-  //       assistantResponse += chunk;
-
-  //       // update the LAST message (assistant) with accumulated content
-  //       setMessages((prev: any) => {
-  //         const updated = [...prev];
-  //         updated[updated.length - 1] = {
-  //           role: "assistant",
-  //           content: assistantResponse,
-  //         };
-  //         return updated;
-  //       });
-  //     }
-
-  //     if (isNewThread) {
-  //       const newThread = await createThread({
-  //         _id: objectId,
-  //         title: query,
-  //       });
-  //     }
-
-  //     const message = await createMessage({
-  //       threadId: params.chatid as string,
-  //       userQuery: query,
-  //       aiResponse: [{ content: assistantResponse, model: "Gemini 2.5 Flash" }],
-  //     });
-
-  //     console.log("message created", message);
-  //   } catch (error) {
-  //     console.error("Error sending message:", error);
-  //     // Remove the empty assistant message on error
-  //     setMessages((prev: any) => prev.slice(0, -1));
-  //   }
-  // };
-
-  // Handle form submission
   const handleSubmit = async () => {
     
     const generatedId = await generateObjectId();
@@ -274,7 +178,7 @@ function ChatInput({
                 placeholder={placeholder}
                 autoFocus
                 id="chat-input"
-                className="w-full max-h-64 min-h-[54px] resize-none bg-transparent text-base leading-6 text-foreground outline-none placeholder:text-secondary-foreground/60 disabled:opacity-50 transition-opacity"
+                className="w-full max-h-18 min-h-[54px] resize-none bg-transparent text-base leading-6 text-foreground outline-none placeholder:text-secondary-foreground/60 disabled:opacity-50 transition-opacity"
                 aria-label="Message input"
                 aria-describedby="chat-input-description"
                 value={query}
@@ -304,40 +208,81 @@ function ChatInput({
               </div>
 
               <div className="flex flex-col gap-2 pr-2 sm:flex-row sm:items-center">
-                <div className="ml-[-7px] flex items-center gap-1">
-                  {/* Search Button */}
+                <div className="ml-[-10px] flex items-center gap-3">
+                  {/* Plus Dropdown Button */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="outline"
+                        className="!rounded-full  !h-auto !p-2"
+                        aria-label="Add"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start">
+                      <DropdownMenuItem
+                        onClick={() => fileInputRef.current?.click()}
+                        className="flex items-center gap-2"
+                      >
+                        <Paperclip className="size-4" />
+                        <span>Add photos and files</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
 
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className={`
-                      
-                      !rounded-full text-xs !h-auto py-1.5 !px-2
-                      `}
-                    aria-label="Web search"
-                  >
-                    <Globe className="h-4 w-4" />
-                    <span className="max-sm:hidden">Search</span>
-                  </Button>
+                  {/* Tools Dropdown Button */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="!rounded-full  !h-auto !p-2"
+                        aria-label="Tools"
+                      >
+                        <Settings className="h-4 w-4" />
+                        <span className="max-sm:hidden">Tools</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start">
+                      <DropdownMenuItem
+                        className="flex items-center gap-2"
+                        onClick={() => setSelectedTool("image")}
+                      >
+                        <Image className="size-4" />
+                        <span>Create an image</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="flex items-center gap-2"
+                        onClick={() => {
+                          setSelectedTool("web");
+                          setIsWebSearch(!isWebSearch);
+                        }}
+                      >
+                        <Globe className="size-4" />
+                        <span>Search the web</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
 
-                  {/* File Attach Button */}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="!rounded-full text-xs !h-auto py-1.5 !px-2.5"
-                    aria-label={
-                      isFileAttachEnabled
-                        ? "Attach file"
-                        : "Attaching files is a subscriber-only feature"
-                    }
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <Paperclip className="size-4" />
-                  </Button>
+                  {/* Selected Tool Pill */}
+                  {selectedTool && (
+                    <span className="flex items-center gap-1 px-2 py-1 rounded-md border text-primary cursor-default text-sm !p-2">
+                      {selectedTool === "image" && <Image className="h-4 w-4 text-primary" />}
+                      {selectedTool === "web" && <Globe className="h-4 w-4 text-primary" />}
+                      <span>
+                        {selectedTool === "image" ? "Image" : "Web"}
+                      </span>
+                      <XIcon
+                        className="h-4 w-4 ml-1 cursor-pointer text-blue-400"
+                        onClick={() => setSelectedTool(null)}
+                      />
+                    </span>
+                  )}
 
-                  {/* Hidden File Input */}
+                  {/* File Attach Button (hidden, triggered by dropdown) */}
                   <input
                     ref={fileInputRef}
                     type="file"

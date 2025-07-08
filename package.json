@@ -36,6 +36,7 @@
     "lucide-react": "^0.525.0",
     "markdown-to-txt": "^2.0.1",
     "marked": "^16.0.0",
+    "mem0ai": "^2.1.35",
     "mongoose": "^8.16.1",
     "next": "15.3.4",
     "next-auth": "^5.0.0-beta.29",

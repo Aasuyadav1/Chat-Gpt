@@ -1,12 +1,14 @@
-'use client'
+"use client";
 import {
   Plus,
   Library,
   PlayCircle,
   Grid,
-  Bot,
   Volume2,
   ChevronUp,
+  ExternalLink,
+  Heart,
+  MessageSquareCode,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -46,24 +48,8 @@ const quickActions = [
   },
 ];
 
-// Menu items for features
-const features = [
-  {
-    title: "Sora",
-    icon: PlayCircle,
-  },
-  {
-    title: "GPTs",
-    icon: Grid,
-  },
-  {
-    title: "Voice Over Generator",
-    icon: Volume2,
-  },
-];
-
 export function AppSidebar() {
-  const router = useRouter()
+  const router = useRouter();
   return (
     <Sidebar collapsible="icon">
       <div className="flex flex-col h-full">
@@ -72,14 +58,13 @@ export function AppSidebar() {
             {/* Header */}
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2 px-3 py-1 group-data-[collapsible=icon]:hidden">
-                <Bot className="h-7 w-7" />
+                <MessageSquareCode className="h-7 w-7" />
               </div>
               <SidebarTrigger />
             </div>
 
             <ScrollArea className="h-[calc(100vh-8rem)]">
               <SidebarGroupContent className="space-y-5 py-2">
-                {/* Quick Actions - Always visible, top 3 icons when collapsed */}
                 <SidebarMenu className="">
                   {quickActions.map((item) => (
                     <SidebarMenuItem key={item.title}>
@@ -87,14 +72,16 @@ export function AppSidebar() {
                         {item.component ? (
                           <item.component />
                         ) : item.link ? (
-                            <Button
-                              onClick={() => router.push(item.link)}                             
-                              variant="ghost"
-                              className="w-full justify-start !text-[15px] !font-light gap-3 px-3"
-                            >
-                              <item.icon className="!w-5 !h-5" />
-                              <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
-                            </Button>
+                          <Button
+                            onClick={() => router.push(item.link)}
+                            variant="ghost"
+                            className="w-full justify-start !text-[15px] !font-light gap-3 px-3"
+                          >
+                            <item.icon className="!w-5 !h-5" />
+                            <span className="group-data-[collapsible=icon]:hidden">
+                              {item.title}
+                            </span>
+                          </Button>
                         ) : (
                           <Button
                             variant="ghost"
@@ -108,42 +95,27 @@ export function AppSidebar() {
                     </SidebarMenuItem>
                   ))}
                 </SidebarMenu>
-                {/* Features - Hidden when collapsed */}
-                {/* <SidebarMenu className="group-data-[collapsible=icon]:hidden">
-                  {features.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton asChild>
-                        <Button
-                          variant="ghost"
-                          className="w-full justify-start gap-3 px-3 !text-[15px] !font-light"
-                        >
-                          <item.icon className="!w-5 !h-5" />
-                          <span>{item.title}</span>
-                        </Button>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu> */}
                 <SidebarThreads />
               </SidebarGroupContent>
             </ScrollArea>
           </SidebarGroup>
         </SidebarContent>
 
-        {/* Fixed Footer - Hidden when collapsed */}
         <div className="mt-auto px-2 group-data-[collapsible=icon]:hidden">
-          <Button
-            variant="outline"
-            className="w-full !bg-transparent border-none justify-between h-14 px-4"
+          <Link
+            href="https://aasuyadav.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full"
           >
-            <div className="flex flex-col items-start text-left">
-              <span className="text-sm font-medium">Upgrade to Plus</span>
-              <span className="text-xs opacity-70">
-                More access to the best models
-              </span>
-            </div>
-            <ChevronUp className="h-4 w-4" />
-          </Button>
+            <Button
+              variant="ghost"
+              className="flex w-full items-center gap-2 text-sm opacity-90 hover:opacity-100 transition-opacity px-2 py-1 rounded-lg"
+            >
+              Built by<span className="underline">Aasu</span>
+              <Heart className="w-4 h-4" />
+            </Button>
+          </Link>
         </div>
       </div>
     </Sidebar>

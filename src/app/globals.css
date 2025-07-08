@@ -426,6 +426,10 @@ span {
   }
 }
 
+button{
+  cursor: pointer !important;
+}
+
 /* Hide t3-tool-loader when t3-tool-output exists in the same container */
 .mark-response:has(.t3-tool-output) .t3-tool-loader {
   display: none !important;

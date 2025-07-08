@@ -6,17 +6,12 @@ import { RefreshCcw, SquarePen, Copy, Check, X } from "lucide-react";
 import { marked } from "marked";
 import { useChatStream } from "@/hooks/use-chat-stream";
 import { regenerateAnotherResponse } from "@/action/message.action";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import chatStore from "@/stores/chat.store";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 import { processSpecificT3Tags } from "@/lib/chat-parser";
-import { branchThread } from "@/action/thread.action";
-import { FiLoader } from "react-icons/fi";
 import { toast } from "sonner";
-// import DevClipboard from "../global-cmp/dev-clipboard";
-// import userStore from "@/stores/user.store";
-// import DevTooltip from "../global-cmp/dev-tooltip";
-// Types
+
 interface Message {
   _id: string;
   userQuery: string;
@@ -63,14 +58,12 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
 
   const queryClient = useQueryClient();
   const { messages, setIsRegenerate } = chatStore();
-  // const { currentModel, userData, currentService } = userStore();
   const retryMessage = async () => {
     setIsRegenerate(true);
     const attachment = message?.attachment;
     const trimmedQuery = message?.userQuery;
 
     if (!trimmedQuery?.trim()) {
-      // console.log("No query to retry");
       return;
     }
 

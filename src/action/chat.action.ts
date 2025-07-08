@@ -1,7 +1,5 @@
 "use server";
-import { auth } from "@/auth";
 import { google } from "@ai-sdk/google";
-// import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
 
 export const generateAiResponse = async ({

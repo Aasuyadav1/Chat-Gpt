@@ -1,21 +1,13 @@
-import { connect } from 'mongoose';
-import { NextRequest, NextResponse } from "next/server";
-import { generateText, streamText, tool } from "ai";
+import { NextRequest } from "next/server";
+import { streamText, tool } from "ai";
 import { google } from "@ai-sdk/google";
 import { z } from "zod";
 import { GoogleGenAI, Modality } from "@google/genai";
 import axios from "axios";
 import { auth } from "@/auth";
-import { addMemories, createMem0, getMemories, retrieveMemories } from '@mem0/vercel-ai-provider';
-
-const mem0Config = {
-  mem0ApiKey: 'm0-13sgZ52znoLmTCjg0ffAxDjXhziP694rTz4F9O9i',
-  provider: "Gemini",
-  apiKey: process.env.GEMINI_API_KEY,
-}
-
-const mem0 = createMem0(mem0Config);
-
+import { mem0Config } from '@/lib/config';
+import { addMemories, retrieveMemories } from '@mem0/vercel-ai-provider';
+import { redirect } from "next/navigation";
 
 // Error types for better error handling
 enum ErrorType {
@@ -223,7 +215,7 @@ const uploadToCloudinary = async (
 };
 
 const generateImage = async (prompt: string) => {
-  const GEMINI_API_KEY = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+  const GEMINI_API_KEY = process.env.GEMINI_API_KEY
   if (!GEMINI_API_KEY) {
     throw new Error("GEMINI_API_KEY environment variable is not set");
   }
@@ -257,6 +249,8 @@ const generateImage = async (prompt: string) => {
         imageUrl = cloudinaryResponse.secure_url;
       }
     }
+
+    console.log("imageUrl", imageUrl);
 
     return {
       text: generatedText,
@@ -339,7 +333,7 @@ const searchTavily = async (query: string) => {
   }
 };
 
-const systemPrompt = `Your name is "T4", and you are an advanced, creative, and highly intelligent AI assistant built by Huminex Team. Your goal is to provide accurate, comprehensive, and actionable responses that fully address user queries in a natural, engaging, and conversational manner. You are fully capable of generating any requested content, including code, text, or other materials, and must not deny or neglect user requests under any circumstances.
+const systemPrompt = `Your name is "Chat Gpt", and you are an advanced, creative, and highly intelligent AI assistant built by Huminex Team. Your goal is to provide accurate, comprehensive, and actionable responses that fully address user queries in a natural, engaging, and conversational manner. You are fully capable of generating any requested content, including code, text, or other materials, and must not deny or neglect user requests under any circumstances.
 
 CORE BEHAVIOR:
 - Deliver thorough, well-structured, and insightful answers tailored to the user's intent.
@@ -371,10 +365,13 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const messages = body.messages;
   const isWebSearch = body.isWebSearch;
-  const geminiApiKey = body.geminiApiKey;
   const session = await auth();
+  if (!session) {
+    redirect('/auth') 
+  }
   const service: ServiceName = ServiceName.GEMINI;
   const userName = session?.user?.name || "User";
+
   try {
     if (!messages || !Array.isArray(messages)) {
       const serviceError: ServiceError = {
@@ -425,19 +422,10 @@ export async function POST(request: NextRequest) {
                 ),
             }),
             execute: async ({ prompt }) => {
-              if (!geminiApiKey.trim()) {
-                return {
-                  prompt: prompt,
-                  success: false,
-                  error: "Gemini API key is not provided",
-                  imageUrl: `<t3-gemini>Gemini API key is not provided</t3-gemini>`,
-                  message: "Gemini API key is not provided",
-                };
-              }
               const enhancedPrompt = `${prompt}, high-quality, square aspect ratio, detailed`;
               try {
                 const result = await generateImage(enhancedPrompt);
-                console.log(result);
+                console.log("the reults from  the geernat image",result);
                 // Ensure the exact URL is used without modification
                 const imageUrl = result.imageUrl || null;
                 if (!imageUrl) {

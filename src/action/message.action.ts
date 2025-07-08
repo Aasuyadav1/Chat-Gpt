@@ -4,7 +4,6 @@ import Message from "@/db/models/message.model";
 import { serializeData } from "@/lib/serialize-data";
 import Thread from "@/db/models/thread.model";
 import { connectDB } from "@/db/db";
-import { MessageType } from "@/types/message.type";
 import { createThread } from "./thread.action";
 
 export const updateSelectedText = async ({
@@ -99,45 +98,10 @@ export const getMessages = async ({ _id }: { _id: string }) => {
       };
     }
 
-    console.log("thread", thread);
-
-    // let allMessages: MessageType[] = [];
-
-    // if (thread.parentChatId) {
-    //   const parentMessage = await Message.findOne({
-    //     _id: thread.parentChatId,
-    //     userId: session.user.id,
-    //   });
-
-    //   if (parentMessage) {
-    //     const parentThreadId = parentMessage.threadId;
-
-    //     const parentMessages = await Message.find({
-    //       threadId: parentThreadId,
-    //       createdAt: { $lte: parentMessage.createdAt },
-    //     }).sort({ createdAt: 1 });
-
-    //     if (parentMessages && parentMessages.length > 0) {
-    //       allMessages = [...parentMessages];
-    //     }
-    //   }
-    // }
-
     const currentMessages = await Message.find({
       threadId: _id,
     }).sort({ createdAt: 1 });
 
-    console.log("currentMessages", currentMessages);
-
-    // if (currentMessages && currentMessages.length > 0) {
-    //   allMessages = [...allMessages, ...currentMessages];
-    // }
-
-    // Sort all messages by creation time to maintain chronological order
-    // allMessages.sort(
-    //   (a, b) =>
-    //     new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-    // );
 
     if (currentMessages.length == 0) {
       return {
@@ -154,37 +118,6 @@ export const getMessages = async ({ _id }: { _id: string }) => {
     return {
       data: null,
       error: error.message || "An error occurred while fetching messages",
-    };
-  }
-};
-
-export const getMessageUsage = async () => {
-  const session = await auth();
-  if (!session?.user) {
-    return {
-      data: null,
-      error: "Unauthorized",
-    };
-  }
-  try {
-    await connectDB();
-
-    const todayMessagesCount = await Message.countDocuments({
-      userId: session.user.id,
-      createdAt: {
-        $gte: new Date(new Date().setHours(0, 0, 0, 0)),
-        $lt: new Date(new Date().setHours(23, 59, 59, 999)),
-      },
-    });
-
-    return {
-      data: serializeData(todayMessagesCount),
-      error: null,
-    };
-  } catch (error) {
-    return {
-      data: null,
-      error: error,
     };
   }
 };
@@ -211,15 +144,6 @@ export const createMessage = async ({
   }
   try {
     await connectDB();
-
-    // const countMessages = await getMessageUsage();
-
-    // if (countMessages.data && countMessages.data >= 20) {
-    //   return {
-    //     data: null,
-    //     error: "You have reached the maximum number of messages for today",
-    //   };
-    // }
 
     if (isNewThread) {
       const newThread = await createThread({
@@ -300,41 +224,6 @@ export const regenerateAnotherResponse = async ({
     return {
       data: null,
       error: error.message || "Failed to regenerate response",
-    };
-  }
-};
-
-export const getAttachmentMessage = async () => {
-  const session = await auth();
-  if (!session?.user) {
-    return {
-      data: null,
-      error: "Unauthorized",
-    };
-  }
-  try {
-    await connectDB();
-
-    const messages = await Message.find({
-      userId: session.user.id,
-      attachment: { $ne: null },
-    });
-
-    if (!messages || messages.length === 0) {
-      return {
-        data: null,
-        error: "No attachment messages found",
-      };
-    }
-
-    return {
-      data: serializeData(messages),
-      error: null,
-    };
-  } catch (error) {
-    return {
-      data: null,
-      error: error,
     };
   }
 };

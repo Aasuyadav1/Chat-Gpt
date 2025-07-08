@@ -9,11 +9,6 @@ const ThreadSchema = new Schema<ThreadType>(
         ref: "User",
         required: true,
     },
-    parentFolderId: {
-      type: Schema.Types.ObjectId,
-      ref: "Folder",
-      default: null,
-    },
     title: {
         type: String,
         trim: true,
@@ -22,11 +17,6 @@ const ThreadSchema = new Schema<ThreadType>(
     isPinned: {
         type: Boolean,
         default: false,
-    },
-    parentChatId: {
-      type: Schema.Types.ObjectId,
-      ref: "Message",
-      default: null,
     },
     shareChatId: {
       type: Schema.Types.ObjectId,
