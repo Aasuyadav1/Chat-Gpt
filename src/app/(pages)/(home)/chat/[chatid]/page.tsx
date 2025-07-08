@@ -14,11 +14,15 @@ const page = () => {
   const params = useParams();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { messages, setMessages, isLoading, isRegenerate } = chatStore();
-  const { data } = useQuery({
+  
+  const { data, isLoading: isQueryLoading } = useQuery({
     queryKey: ["thread-messages", params.chatid],
     queryFn: async () => {
       const posts = await getMessages({ _id: params.chatid as string });
-      posts.data && setMessages(posts.data);
+      // Only update messages from database if we're not currently streaming
+      if (posts.data && !isLoading) {
+        setMessages(posts.data);
+      }
       return posts.data;
     },
     staleTime: 0,
@@ -41,6 +45,9 @@ const page = () => {
     }
   }, [isLoading, messages]);
 
+  // Show loading state when fetching thread data and no messages exist
+  const shouldShowLoader = isQueryLoading && (!messages || messages.length === 0) && !isLoading;
+
   return (
     <div className="overflow-hidden">
       <div className="mt-10 py-10 overflow-y-auto h-[calc(100vh-235px)]">
@@ -53,13 +60,20 @@ const page = () => {
           aria-live="polite"
           className="mx-auto flex w-full max-w-[710px] flex-col pb-20 space-y-12 px-2"
         >
-          {/* Render stored messages */}
-          {messages &&
+          {/* Show loader when switching between chats */}
+          {shouldShowLoader ? (
+            <div className="flex items-center justify-center h-32">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+            </div>
+          ) : (
+            /* Render stored messages */
+            messages &&
             Array.isArray(messages) &&
             messages.length > 0 &&
             messages.map((message: any, index: number) => (
               <MessagePair key={index} message={message} />
-            ))}
+            ))
+          )}
         </div>
       </div>
       <div ref={messagesEndRef} />
