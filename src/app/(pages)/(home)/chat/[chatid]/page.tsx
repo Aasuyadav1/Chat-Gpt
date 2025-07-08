@@ -43,7 +43,7 @@ const page = () => {
 
   return (
     <div className="overflow-hidden">
-      <div className="mt-10 py-10 overflow-y-auto h-[calc(100vh-230px)]">
+      <div className="mt-10 py-10 overflow-y-auto h-[calc(100vh-235px)]">
         <TextSelectionDropdown />
 
         <div

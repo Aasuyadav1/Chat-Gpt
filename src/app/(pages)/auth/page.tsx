@@ -19,13 +19,6 @@ const AuthPage = async () => {
   };
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center p-8">
-      <div className="absolute left-4 top-4">
-        <Link href="/">
-          <Button variant="ghost">
-            <LuArrowLeft /> Back to Chat
-          </Button>
-        </Link>
-      </div>
       <h1 className="mb-5 h-5 text-xl font-bold text-foreground flex items-center gap-2">
         Welcome to Chat-Gpt
         {/* <SidebarLogo className="text-wordmark-color" /> */}
