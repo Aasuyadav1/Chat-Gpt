@@ -200,7 +200,11 @@ function ChatInput({
                   variant="default"
                   type="submit"
                   size="icon"
-                  disabled={false}
+                  disabled={
+                    isLoading ||
+                    (!query.trim() && !attachmentUrl) ||
+                    uploadState.isUploading
+                  }
                   className="transition-[opacity, translate-x] h-9 w-9 duration-200"
                 >
                   <ArrowUp className="!size-5" />
