@@ -1,6 +1,6 @@
 "use client";
 import React, { KeyboardEvent, useState, useRef } from "react";
-import { ArrowUp, Globe, Paperclip, X, File, Plus, Settings, Image } from "lucide-react";
+import { ArrowUp, Globe, Paperclip, X, File, Plus, Settings, Image as ImageIcon } from "lucide-react";
 import { Button } from "../ui/button";
 import { useRouter } from "next/navigation";
 import { useParams } from "next/navigation";
@@ -16,6 +16,9 @@ import {
   DropdownMenuItem,
 } from "../ui/dropdown-menu";
 import { X as XIcon } from "lucide-react";
+import { FiLoader } from "react-icons/fi";
+import Image from "next/image";
+
 
 interface ChatInputProps {
   placeholder?: string;
@@ -149,19 +152,27 @@ function ChatInput({
     <div className="!w-full !max-w-[710px] bg-accent px-4 py-4 rounded-3xl">
       <div>
         <form className="" onSubmit={handleFormSubmit}>
-          {attachmentPreview && (
+        {attachmentPreview && (
             <div className="mb-2 p-1.5 bg-muted/30 group h-12 aspect-square w-fit grid items-center relative rounded-lg border border-border/50">
               <div className="grid place-items-center gap-2 w-fit rounded-md">
-                {attachmentPreview.type.startsWith("pdf/") && (
-                  <File className="h-4 w-4" />
-                )}
-                {attachmentPreview.type.startsWith("image/") && (
-                  <img
-                    src={attachmentPreview.url}
-                    alt="Preview"
-                    className="h-8 w-8 object-cover rounded"
+                {uploadState.isUploading && (
+                  <FiLoader
+                    className="animate-spin ml-1.5 text-primary"
+                    size={20}
                   />
                 )}
+                {attachmentPreview.type.startsWith("pdf/") &&
+                  !uploadState.isUploading && <File className="h-4 w-4" />}
+                {attachmentPreview.type.startsWith("image/") &&
+                  !uploadState.isUploading && (
+                    <Image
+                      src={attachmentPreview.url || ""}
+                      alt="Preview"
+                      width={32}
+                      height={32}
+                      className="h-8 w-8 object-cover rounded"
+                    />
+                  )}
               </div>
 
               <X
@@ -255,7 +266,7 @@ function ChatInput({
                         className="flex items-center gap-2"
                         onClick={() => setSelectedTool("image")}
                       >
-                        <Image className="size-4" />
+                        <ImageIcon className="size-4" />
                         <span>Create an image</span>
                       </DropdownMenuItem>
                       <DropdownMenuItem
@@ -274,7 +285,7 @@ function ChatInput({
                   {/* Selected Tool Pill */}
                   {selectedTool && (
                     <span className="flex items-center gap-1 px-2 py-1 rounded-md border text-primary cursor-default text-sm !p-2">
-                      {selectedTool === "image" && <Image className="h-4 w-4 text-primary" />}
+                      {selectedTool === "image" && <ImageIcon className="h-4 w-4 text-primary" />}
                       {selectedTool === "web" && <Globe className="h-4 w-4 text-primary" />}
                       <span>
                         {selectedTool === "image" ? "Image" : "Web"}
