@@ -7,7 +7,6 @@ import axios from "axios";
 import { auth } from "@/auth";
 import { mem0Config } from '@/lib/config';
 import { addMemories, retrieveMemories } from '@mem0/vercel-ai-provider';
-import { redirect } from "next/navigation";
 
 // Error types for better error handling
 enum ErrorType {
@@ -366,8 +365,13 @@ export async function POST(request: NextRequest) {
   const messages = body.messages;
   const isWebSearch = body.isWebSearch;
   const session = await auth();
-  if (!session) {
-    redirect('/auth') 
+  if (!session?.user) {
+    return createErrorStream({
+      type: ErrorType.AUTHENTICATION_ERROR,
+      service: ServiceName.GEMINI,
+      message: "Unauthorized",
+      statusCode: 401,
+    });
   }
   const service: ServiceName = ServiceName.GEMINI;
   const userName = session?.user?.name || "User";

@@ -23,10 +23,6 @@ export const getThread = async () => {
     const threads = await Thread.find({
       userId: session.user.id,
     })
-      .populate({
-        path: "parentChatId",
-        model: "Message",
-      })
       .sort({ createdAt: -1 });
 
 
