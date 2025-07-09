@@ -4,6 +4,16 @@ type ChatStoreType = {
    query: string;
    setQuery: (query: string) => void;
    messages: any[];
+   editMessageInfo: {
+    messageId: string | null;
+    attachmentUrl: string | null;
+    content: string | null;
+   };
+   setEditMessageInfo: (editMessage: {
+    messageId: string;
+    attachmentUrl: string;
+    content: string;
+   }) => void;
    setMessages: (messages: any) => void;
    isLoading: boolean;
    setIsLoading: (isLoading: boolean) => void;
@@ -27,6 +37,16 @@ const chatStore = create<ChatStoreType>((set, get) => ({
             set({ messages });
         }
     },
+    editMessageInfo: {
+        messageId: null,
+        attachmentUrl: null,
+        content: null,
+    },
+    setEditMessageInfo: (editMessage: {
+        messageId: string;
+        attachmentUrl: string;
+        content: string;
+    }) => set({ editMessageInfo: editMessage }),
     isLoading: false,
     setIsLoading: (isLoading: boolean) => set({ isLoading }),
     isRegenerate: false,

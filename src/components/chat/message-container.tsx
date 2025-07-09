@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { RefreshCcw, SquarePen, Copy, Check, X } from "lucide-react";
+import { RefreshCcw, SquarePen, Copy, Check, X, File } from "lucide-react";
 import { marked } from "marked";
 import { useChatStream } from "@/hooks/use-chat-stream";
 import { regenerateAnotherResponse } from "@/action/message.action";
@@ -11,6 +11,14 @@ import chatStore from "@/stores/chat.store";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 import { processSpecificT3Tags } from "@/lib/chat-parser";
 import { toast } from "sonner";
+import { useStreamResponse } from "@/hooks/use-response-stream";
+
+
+// Helper function to detect if URL is a PDF
+const isPdfUrl = (url: string): boolean => {
+  const urlLower = url.toLowerCase();
+  return urlLower.includes('pdf') || urlLower.includes('.pdf') || urlLower.includes('application/pdf');
+};
 
 interface Message {
   _id: string;
@@ -153,27 +161,6 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
         afterCopy={<Check aria-hidden="true" />}
       /> */}
 
-      {/* {role === "assistant" && (
-        // <DevTooltip tipData="Branch off">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-xs"
-            aria-label="Branch off message"
-            // onClick={() => handleBranch(messageId as string)}
-            data-state="closed"
-          >
-            <div className="relative size-4 *:text-muted-foreground">
-              {isBranching ? (
-                <FiLoader className="animate-spin" />
-              ) : ( 
-                <div>branch</div>
-                // <BranchOffIcon />
-              )}
-            </div>
-          </Button>
-        // </DevTooltip>
-      )} */}
 
       {role === "assistant" && (
         // <DevTooltip tipData="Retry message">
@@ -237,6 +224,7 @@ interface UserMessageProps {
   userQuery?: string;
   onEdit?: () => void;
   onCopy?: () => void;
+  threadId?: string;
 }
 
 export const UserMessage: React.FC<UserMessageProps> = ({
@@ -246,33 +234,59 @@ export const UserMessage: React.FC<UserMessageProps> = ({
   userQuery,
   attachmentUrl,
   onEdit,
+  threadId,
   onCopy,
 }) => {
   const { setQuery } = chatStore();
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(content);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { sendMessage } = useStreamResponse();
+
 
   const handleEdit = () => {
     setIsEditing(!isEditing);
     setEditContent(content);
   };
 
+  const handleSendEditedMessage = async () => {
+
+    const messageData = {
+      messageId,
+      content: editContent,
+      attachmentUrl,
+      userQuery: editContent
+    };
+    
+    setQuery(editContent);
+    setIsEditing(false);
+
+    await sendMessage({
+      chatid: threadId || "",
+      attachmentUrl: attachmentUrl,
+      resetAttachment: () => {},
+      isNewThread: !threadId,
+      previousMessageId: messageId,
+    });
+
+    setTimeout(() => {
+      const messagesEndRef = document.querySelector("[data-messages-end]");
+      messagesEndRef?.scrollIntoView({
+        behavior: "smooth",
+        block: "end",
+      });
+    }, 200);
+    
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      setQuery(editContent);
-      setIsEditing(false);
     }
     if (e.key === "Escape") {
       setIsEditing(false);
       setEditContent(content);
     }
-  };
-
-  const handleBlur = () => {
-    setIsEditing(false);
-    setEditContent(content);
   };
 
   return (
@@ -281,23 +295,61 @@ export const UserMessage: React.FC<UserMessageProps> = ({
       className="flex relative justify-end items-end flex-col duration-300 animate-in fade-in-50 zoom-in-95"
     >
       {isEditing ? (
-        <div className="flex items-end gap-1 flex-col w-full ">
-          <textarea
-            ref={textareaRef}
-            value={editContent}
-            onChange={(e) => setEditContent(e.target.value)}
-            onKeyDown={handleKeyDown}
-            onBlur={handleBlur}
-            className="w-full edit-input  border !border-secondary/50 focus:ring ring-secondary/80 max-h-48 min-h-16 outline-none bg-transparent text-inherit font-inherit leading-inherit p-2 rounded-xl shadow-inner"
-            placeholder="Type your message..."
-          />
-          <MessageActions
-            role="user"
-            userQuery={content}
-            onEdit={handleEdit}
-            showBranch={false}
-            showEdit={true}
-          />
+        <div className="flex items-end gap-3 flex-col w-full">
+          <div className="w-full bg-accent px-4 py-4 rounded-3xl shadow-sm">
+            <textarea
+              ref={textareaRef}
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className="w-full resize-none border-0 bg-transparent text-foreground max-h-48 min-h-16 outline-none focus:ring-0 placeholder:text-muted-foreground"
+              placeholder="Type your message..."
+            />
+            {attachmentUrl && (
+              <div className="h-26 origin-center ease-snappy scale-100 overflow-hidden mt-3 w-26 rounded-xl bg-secondary/20 border-2 p-2 border-border aspect-square">
+                <input
+                  type="checkbox"
+                  name={messageId}
+                  className={`${messageId} checked:hidden peer z-10 absolute opacity-0 inset-0`}
+                />
+
+                {isPdfUrl(attachmentUrl) ? (
+                  <div className="flex flex-col items-center justify-center h-full w-full bg-red-50 rounded-lg border border-red-200 peer-checked:bg-white peer-checked:border-red-300">
+                    <File className="h-6 w-6 text-red-600 mb-1" />
+                    <span className="text-[10px] font-medium text-red-600 leading-none">PDF</span>
+                    <span className="text-[8px] text-red-500 mt-0.5 leading-none">Document</span>
+                  </div>
+                ) : (
+                  <img
+                    className="object-cover relative rounded-lg h-full w-full peer-checked:object-contain peer-checked:max-w-full peer-checked:max-h-full"
+                    src={attachmentUrl}
+                    alt={messageId + "-attachment"}
+                    loading="lazy"
+                  />
+                )}
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setIsEditing(false);
+                setEditContent(content);
+              }}
+              className="h-8 px-3 text-sm"
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleSendEditedMessage}
+              className="h-8 px-3 text-sm"
+            >
+              Send
+            </Button>
+          </div>
         </div>
       ) : (
         <>
@@ -323,27 +375,29 @@ export const UserMessage: React.FC<UserMessageProps> = ({
             </div>
           </div>
           {attachmentUrl && (
-            <div className="h-16 origin-center ease-snappy scale-100 has-[input:checked]:scale-110 -translate-y-1/2 overflow-hidden has-[input:not(:checked)]:!translate-none -translate-x-1/2 left-1/2 top-1/2 mt-2 has-[input:checked]:fixed has-[input:checked]:w-[80vw] has-[input:checked]:z-50 has-[input:checked]:h-[70vh] transition-[scale] w-16 rounded-xl bg-secondary/20 border-2 p-1 border-secondary/50 aspect-square">
+            <div className="h-26 origin-center ease-snappy scale-100 overflow-hidden mt-2  w-26 rounded-xl bg-secondary/20 border-2 p-2 border-secondary/50 aspect-square">
               <input
                 type="checkbox"
                 name={messageId}
-                id={messageId}
-                className={`${messageId} checked:hidden cursor-pointer peer z-10 absolute opacity-0 inset-0`}
+                // id={messageId}
+                className={`${messageId} checked:hidden peer z-10 absolute opacity-0 inset-0`}
               />
 
-              <img
-                className="object-cover relative rounded-lg h-full w-full peer-checked:object-contain peer-checked:max-w-full peer-checked:max-h-full"
-                src={attachmentUrl}
-                alt={messageId + "-attachment"}
-                loading="lazy"
-              />
+              {isPdfUrl(attachmentUrl) ? (
+                <div className="flex flex-col items-center justify-center h-full w-full bg-red-50 rounded-lg border border-red-200 peer-checked:bg-white peer-checked:border-red-300">
+                  <File className="h-6 w-6 text-red-600 mb-1" />
+                  <span className="text-[10px] font-medium text-red-600 leading-none">PDF</span>
+                  <span className="text-[8px] text-red-500 mt-0.5 leading-none">Document</span>
+                </div>
+              ) : (
+                <img
+                  className="object-cover relative rounded-lg h-full w-full peer-checked:object-contain peer-checked:max-w-full peer-checked:max-h-full"
+                  src={attachmentUrl}
+                  alt={messageId + "-attachment"}
+                  loading="lazy"
+                />
+              )}
 
-              <label
-                htmlFor={messageId}
-                className="absolute cursor-pointer border-input border-2 rounded-md bg-border peer-checked:block hidden top-2 right-2 z-20"
-              >
-                <X size={20} />
-              </label>
             </div>
           )}
         </>
@@ -359,6 +413,7 @@ interface AIResponseProps {
   totalResponses?: number;
   message?: Message;
   messageId?: string;
+  threadId?: string;
   isStreaming?: boolean;
   subMessageId?: string;
   isLoading?: boolean;
@@ -376,6 +431,7 @@ export const AIResponse: React.FC<AIResponseProps> = ({
   subMessageId,
   message,
   messageId,
+  threadId,
   isStreaming = false,
   modelName = "Gemini 2.5 Flash",
   onRetry,
@@ -451,20 +507,20 @@ export const AIResponse: React.FC<AIResponseProps> = ({
 // Message Pair Component (User + AI Response)
 interface MessagePairProps {
   message: Message;
+  threadId: string;
 }
 
-const MessagePair: React.FC<MessagePairProps> = ({ message }) => {
+const MessagePair: React.FC<MessagePairProps> = ({ message, threadId }) => {
   const [responseIndex, setResponseIndex] = useState(0);
   const aiContent = message?.aiResponse?.[responseIndex]?.content || "";
   const subMessageId = message?.aiResponse?.[responseIndex]?._id || "";
-
-  console.log("message from the message pair", message);
   return (
     <div className="space-y-16">
       <UserMessage
         content={message.userQuery}
         attachmentUrl={message.attachment}
         messageId={message._id}
+        threadId={threadId}
       />
       <AIResponse
         content={aiContent}
@@ -474,6 +530,7 @@ const MessagePair: React.FC<MessagePairProps> = ({ message }) => {
         responseIndex={responseIndex}
         setResponseIndex={setResponseIndex}
         messageId={message._id}
+        threadId={threadId}
       />
     </div>
   );

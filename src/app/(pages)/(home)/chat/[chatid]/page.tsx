@@ -2,7 +2,6 @@
 import React from "react";
 import ChatInput from "@/components/chat/chat-input";
 import { getMessages } from "@/action/message.action";
-import DisplayMessage from "@/components/global/display-message";
 import MessagePair from "@/components/chat/message-container";
 import { useParams } from "next/navigation";
 import { useEffect, useRef } from "react";
@@ -26,15 +25,17 @@ const page = () => {
     enabled: !!params.chatid,
   });
 
-  // Auto-scroll to bottom when messages or response updates
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({
-      behavior: "smooth",
-      block: "end",
-    });
+    setTimeout(() => {
+      const container = messagesEndRef.current?.parentElement;
+      if (container) {
+        container.scrollTo({
+          top: container.scrollHeight + container.offsetHeight,
+        });
+      }
+    }, 100); 
   };
 
-  // Scroll when response updates (streaming)
   useEffect(() => {
     if (!isRegenerate) {
       scrollToBottom();
@@ -42,15 +43,14 @@ const page = () => {
   }, [isLoading, messages]);
 
   useEffect(() => {
-    if(!isLoading){
+    scrollToBottom();
+    if (!isLoading) {
       setMessages([]);
     }
   }, [params.chatid]);
 
-
   return (
-    <div className="overflo
-w-hidden">
+    <div className="overflow-hidden">
       <div className="mt-10 py-10 overflow-y-auto h-[calc(100vh-235px)]">
         <TextSelectionDropdown />
 
@@ -66,11 +66,12 @@ w-hidden">
             Array.isArray(messages) &&
             messages.length > 0 &&
             messages.map((message: any, index: number) => (
-              <MessagePair key={index} message={message} />
+              <MessagePair key={index} message={message} threadId={params.chatid as string} />
             ))}
         </div>
+        
+        <div ref={messagesEndRef} data-messages-end />
       </div>
-      <div ref={messagesEndRef} />
       <div className="z-10 bg-background rounded-tl-3xl max-w-[710px] mx-auto rounded-tr-3xl w-full">
         <ChatInput />
         <p className="text-center my-4 text-sm opacity-80">

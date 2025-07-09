@@ -227,3 +227,36 @@ export const regenerateAnotherResponse = async ({
     };
   }
 };
+
+export const deleteMessage = async ({
+  messageId,
+}: {
+  messageId: string;
+}) => {
+  const session = await auth();
+  if (!session?.user) {
+    return {
+      data: null,
+      error: "Unauthorized",
+    };
+  }
+  try {
+    await connectDB();
+
+    await Message.findOneAndDelete({
+      _id: messageId,
+      userId: session.user.id,
+    });
+
+    return {
+      data: "Message deleted successfully",
+      error: null,
+    };
+  } catch (error: any) {
+    console.log("error in delete message", error);
+    return {
+      data: null,
+      error: error.message || "Failed to delete message",
+    };
+  }
+}

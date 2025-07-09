@@ -1,8 +1,60 @@
 import { useState, useCallback } from "react";
 import chatStore from "@/stores/chat.store";
-import { createMessage } from "@/action/message.action";
+import { createMessage, deleteMessage } from "@/action/message.action";
 import { useQueryClient } from "@tanstack/react-query";
 // import userStore from "@/stores/user.store";
+
+// Helper function to detect file type from URL
+const getFileTypeFromUrl = (url: string) => {
+  const urlLower = url.toLowerCase();
+
+  // Check for image types
+  if (
+    urlLower.includes("image/") ||
+    urlLower.match(/\.(jpg|jpeg|png|gif|bmp|webp|svg)(\?|$)/)
+  ) {
+    return {
+      type: "image",
+      mimeType: urlLower.includes("png")
+        ? "image/png"
+        : urlLower.includes("gif")
+        ? "image/gif"
+        : urlLower.includes("webp")
+        ? "image/webp"
+        : "image/jpeg",
+    };
+  }
+
+  // Check for PDF
+  if (urlLower.includes("pdf") || urlLower.includes(".pdf")) {
+    return {
+      type: "document",
+      mimeType: "application/pdf",
+    };
+  }
+
+  // Check for text/document types
+  if (
+    urlLower.includes(".txt") ||
+    urlLower.includes(".doc") ||
+    urlLower.includes(".docx")
+  ) {
+    return {
+      type: "document",
+      mimeType: urlLower.includes(".txt")
+        ? "text/plain"
+        : urlLower.includes(".docx")
+        ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        : "application/msword",
+    };
+  }
+
+  // Default to text if unknown
+  return {
+    type: "text",
+    mimeType: "text/plain",
+  };
+};
 
 interface Message {
   _id?: string;
@@ -27,11 +79,13 @@ interface UseStreamResponseReturn {
     attachmentUrl,
     resetAttachment,
     isNewThread,
+    previousMessageId,
   }: {
     chatid: string;
     attachmentUrl?: string;
     resetAttachment?: () => void;
     isNewThread?: boolean;
+    previousMessageId?: string | null;
   }) => Promise<void>;
   clearMessages: () => void;
 }
@@ -40,21 +94,34 @@ export function useStreamResponse(): UseStreamResponseReturn {
   const { isLoading, setIsLoading } = chatStore();
   const [error, setError] = useState<string | null>(null);
   const queryClient = useQueryClient();
-  
+
   const sendMessage = useCallback(
     async ({
       chatid,
       attachmentUrl,
       resetAttachment,
       isNewThread,
+      previousMessageId = null,
     }: {
       chatid: string;
       attachmentUrl?: string;
       resetAttachment?: () => void;
       isNewThread?: boolean;
+      previousMessageId?: string | null;
     }) => {
-      // const {currentModel,userData, currentService} = userStore.getState()      
-      const { query, messages, setMessages, setQuery, isWebSearch } = chatStore.getState();
+      // const {currentModel,userData, currentService} = userStore.getState()
+
+      // if previous message id is provided, remove it from the messages array
+
+      if (previousMessageId) {
+        const { messages, setMessages } = chatStore.getState();
+        setMessages(
+          messages.filter((msg: Message) => msg._id !== previousMessageId)
+        );
+      }
+
+      const { query, messages, setMessages, setQuery, isWebSearch } =
+        chatStore.getState();
       if (!query?.trim() || isLoading) return;
       const trimmedQuery = query.trim();
       setQuery("");
@@ -72,7 +139,7 @@ export function useStreamResponse(): UseStreamResponseReturn {
       const optimisticMessage: Message = {
         tempId,
         threadId: chatid,
-        userId: "sdfljaksfadfasf", // Random user id 
+        userId: "sdfljaksfadfasf", // Random user id
         userQuery: trimmedQuery,
         attachment: attachment || undefined,
         isSearch: isWebSearch,
@@ -87,32 +154,62 @@ export function useStreamResponse(): UseStreamResponseReturn {
       setMessages([...currentMessages, optimisticMessage]);
 
       try {
-        const apiMessages =
+        // Only include the last 6 conversations for context
+        const recentMessages =
           currentMessages && currentMessages.length > 0
-            ? currentMessages.flatMap((msg: Message) => [
-                {
-                  role: "user" as const,
-                  content: [{ type: "text", text: msg.userQuery }],
-                },
-                {
-                  role: "assistant" as const,
-                  content: [
-                    { type: "text", text: msg && msg.aiResponse && msg.aiResponse.length > 0 ? msg.aiResponse[0]?.content : "" },
-                  ],
-                },
-              ])
+            ? currentMessages.slice(-6) // Take only the last 6 messages
             : [];
+
+        const apiMessages = recentMessages.flatMap((msg: Message) => [
+          {
+            role: "user" as const,
+            content: [{ type: "text", text: msg.userQuery }],
+          },
+          {
+            role: "assistant" as const,
+            content: [
+              {
+                type: "text",
+                text:
+                  msg && msg.aiResponse && msg.aiResponse.length > 0
+                    ? msg.aiResponse[0]?.content
+                    : "",
+              },
+            ],
+          },
+        ]);
+
+        // Determine content structure based on attachment type
+        let messageContent: any[] = [{ type: "text", text: trimmedQuery }];
+
+        if (attachment) {
+          const fileInfo = getFileTypeFromUrl(attachment);
+
+          if (fileInfo.type === "image") {
+            // For images, add as image content
+            messageContent.push({
+              type: "image",
+              image: new URL(attachment),
+              mimeType: fileInfo.mimeType,
+            });
+          } else if (fileInfo.type === "document") {
+            const pdfResp = await fetch(attachment);
+            const arrayBuffer = await pdfResp.arrayBuffer();
+            const base64 = btoa(
+              String.fromCharCode(...new Uint8Array(arrayBuffer))
+            );
+
+            messageContent.push({
+              type: "file",
+              data: base64,
+              mimeType: "application/pdf",
+            });
+          }
+        }
 
         apiMessages.push({
           role: "user" as const,
-          content: [
-            {
-              type: attachment ? "image" : "text",
-              mimeType: attachment ? "image/jpeg" : "text/plain",
-              text: trimmedQuery,
-              image: attachment ? new URL(attachment) : undefined,
-            } as any,
-          ],
+          content: messageContent,
         });
 
         const response = await fetch("/api/chat", {
@@ -164,6 +261,10 @@ export function useStreamResponse(): UseStreamResponseReturn {
               : msg
           );
           currentState.setMessages(updatedMessages);
+        }
+
+        if (previousMessageId) {
+          await deleteMessage({ messageId: previousMessageId });
         }
 
         // Save message to database

@@ -1,6 +1,15 @@
 "use client";
 import React, { KeyboardEvent, useState, useRef } from "react";
-import { ArrowUp, Globe, Paperclip, X, File, Plus, Settings, Image as ImageIcon } from "lucide-react";
+import {
+  ArrowUp,
+  Globe,
+  Paperclip,
+  X,
+  File,
+  Plus,
+  Settings,
+  Image as ImageIcon,
+} from "lucide-react";
 import { Button } from "../ui/button";
 import { useRouter } from "next/navigation";
 import { useParams } from "next/navigation";
@@ -18,6 +27,7 @@ import {
 import { X as XIcon } from "lucide-react";
 import { FiLoader } from "react-icons/fi";
 import Image from "next/image";
+import { toast } from "sonner";
 
 interface ChatInputProps {
   placeholder?: string;
@@ -60,7 +70,9 @@ function ChatInput({
   } | null>(null);
 
   const queryClient = useQueryClient();
-  const [selectedTool, setSelectedTool] = useState<null | "image" | "web">(null);
+  const [selectedTool, setSelectedTool] = useState<null | "image" | "web">(
+    null
+  );
 
   const generateObjectId = async () => {
     return new mongoose.Types.ObjectId().toString();
@@ -78,6 +90,25 @@ function ChatInput({
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Validate file type - only images and PDFs allowed
+    const isImage = file.type.startsWith("image/");
+    const isPDF =
+      file.type === "application/pdf" ||
+      file.name.toLowerCase().endsWith(".pdf");
+
+    if (!isImage && !isPDF) {
+      toast.info("Only image files and PDF documents are supported.");
+      e.target.value = ""; // Clear the input
+      return;
+    }
+
+    // Validate PDF file size (max 10MB)
+    if (isPDF && file.size > 10 * 1024 * 1024) {
+      toast.info("PDF file size must be less than 10MB.");
+      e.target.value = ""; // Clear the input
+      return;
+    }
 
     try {
       // Show preview immediately
@@ -104,14 +135,16 @@ function ChatInput({
       );
     } catch (error: any) {
       console.error("Upload failed:", error);
-      
+
       // Show user-friendly error message
-      if (error.name === 'CloudinaryUntrustedError') {
-        console.log('PDF upload requires account verification. Please verify your Cloudinary account.');
+      if (error.name === "CloudinaryUntrustedError") {
+        console.log(
+          "PDF upload requires account verification. Please verify your Cloudinary account."
+        );
       } else {
         console.log(`Upload failed: ${error.message}`);
       }
-      
+
       // Remove preview on error
       setAttachmentPreview(null);
       setAttachmentUrl("");
@@ -135,12 +168,21 @@ function ChatInput({
       setMessages([]);
       router.push(`/chat/${generatedId}`);
     }
+
     await sendMessage({
       chatid: (params.chatid as string) || generatedId,
       attachmentUrl: attachmentUrl,
       resetAttachment: handleRemoveAttachment,
       isNewThread: !params.chatid,
     });
+
+    setTimeout(() => {
+      const messagesEndRef = document.querySelector("[data-messages-end]");
+      messagesEndRef?.scrollIntoView({
+        behavior: "smooth",
+        block: "end",
+      });
+    }, 200);
 
     if (!params.chatid) {
       queryClient.invalidateQueries({ queryKey: ["threads"] });
@@ -154,7 +196,6 @@ function ChatInput({
     handleSubmit();
   };
 
-  // Helper function to get file type icon
   const getFileIcon = (type: string, name: string) => {
     if (type.startsWith("image/")) {
       return (
@@ -166,8 +207,18 @@ function ChatInput({
           className="h-8 w-8 object-cover rounded"
         />
       );
-    } else if (type === "application/pdf" || name.toLowerCase().endsWith('.pdf')) {
-      return <File className="h-4 w-4 text-red-500" />;
+    } else if (
+      type === "application/pdf" ||
+      name.toLowerCase().endsWith(".pdf")
+    ) {
+      return (
+        <div className="flex flex-col items-center justify-center h-8 w-8 bg-red-50 rounded border border-red-200">
+          <File className="h-4 w-4 text-red-600" />
+          <span className="text-[8px] font-medium text-red-600 leading-none mt-0.5">
+            PDF
+          </span>
+        </div>
+      );
     } else {
       return <File className="h-4 w-4" />;
     }
@@ -186,7 +237,8 @@ function ChatInput({
                     size={20}
                   />
                 )}
-                {!uploadState.isUploading && getFileIcon(attachmentPreview.type, attachmentPreview.name)}
+                {!uploadState.isUploading &&
+                  getFileIcon(attachmentPreview.type, attachmentPreview.name)}
               </div>
 
               <X
@@ -264,7 +316,7 @@ function ChatInput({
                         className="flex items-center gap-2"
                       >
                         <Paperclip className="size-4" />
-                        <span>Add photos and files</span>
+                        <span>Add images and PDFs</span>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -306,11 +358,13 @@ function ChatInput({
                   {/* Selected Tool Pill */}
                   {selectedTool && (
                     <span className="flex items-center gap-1 px-2 py-1 rounded-md border text-primary cursor-default text-sm !p-2">
-                      {selectedTool === "image" && <ImageIcon className="h-4 w-4 text-primary" />}
-                      {selectedTool === "web" && <Globe className="h-4 w-4 text-primary" />}
-                      <span>
-                        {selectedTool === "image" ? "Image" : "Web"}
-                      </span>
+                      {selectedTool === "image" && (
+                        <ImageIcon className="h-4 w-4 text-primary" />
+                      )}
+                      {selectedTool === "web" && (
+                        <Globe className="h-4 w-4 text-primary" />
+                      )}
+                      <span>{selectedTool === "image" ? "Image" : "Web"}</span>
                       <XIcon
                         className="h-4 w-4 ml-1 cursor-pointer text-blue-400"
                         onClick={() => setSelectedTool(null)}
@@ -325,7 +379,7 @@ function ChatInput({
                     disabled={attachmentUrl ? true : false}
                     multiple={false}
                     className="hidden"
-                    accept="image/*,application/pdf,.pdf,.doc,.docx,.txt"
+                    accept="image/*,application/pdf,.pdf"
                     onChange={handleFileSelect}
                   />
                 </div>
