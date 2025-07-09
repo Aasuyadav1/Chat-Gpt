@@ -30,6 +30,7 @@ GEMINI_API_KEY=your_gemini_api_key
 
 # Mem0 API Key
 MEM0_API_KEY=your_mem0_api_key
+MEM0_API_URL=https://api.mem0.ai/
 
 # Tavily API Key
 TAVILY_API_KEY=your_tavily_api_key
