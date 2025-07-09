@@ -19,7 +19,6 @@ import { X as XIcon } from "lucide-react";
 import { FiLoader } from "react-icons/fi";
 import Image from "next/image";
 
-
 interface ChatInputProps {
   placeholder?: string;
   modelName?: string;
@@ -51,17 +50,16 @@ function ChatInput({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-   // Cloudinary upload hook
-   const { uploadState, uploadFile, resetUpload } = useCloudinaryUpload();
-   const [attachmentUrl, setAttachmentUrl] = useState<string>("");
-   const [attachmentPreview, setAttachmentPreview] = useState<{
-     name: string;
-     type: string;
-     url: string;
-   } | null>(null);
+  // Cloudinary upload hook
+  const { uploadState, uploadFile, resetUpload } = useCloudinaryUpload();
+  const [attachmentUrl, setAttachmentUrl] = useState<string>("");
+  const [attachmentPreview, setAttachmentPreview] = useState<{
+    name: string;
+    type: string;
+    url: string;
+  } | null>(null);
 
   const queryClient = useQueryClient();
-
   const [selectedTool, setSelectedTool] = useState<null | "image" | "web">(null);
 
   const generateObjectId = async () => {
@@ -77,7 +75,7 @@ function ChatInput({
     }
   };
 
-   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -104,11 +102,20 @@ function ChatInput({
             }
           : null
       );
-    } catch (error) {
+    } catch (error: any) {
       console.error("Upload failed:", error);
+      
+      // Show user-friendly error message
+      if (error.name === 'CloudinaryUntrustedError') {
+        console.log('PDF upload requires account verification. Please verify your Cloudinary account.');
+      } else {
+        console.log(`Upload failed: ${error.message}`);
+      }
+      
       // Remove preview on error
       setAttachmentPreview(null);
       setAttachmentUrl("");
+      resetUpload();
     }
   };
 
@@ -122,7 +129,6 @@ function ChatInput({
   };
 
   const handleSubmit = async () => {
-    
     const generatedId = await generateObjectId();
     setIsRegenerate(false);
     if (!params.chatid) {
@@ -148,11 +154,30 @@ function ChatInput({
     handleSubmit();
   };
 
+  // Helper function to get file type icon
+  const getFileIcon = (type: string, name: string) => {
+    if (type.startsWith("image/")) {
+      return (
+        <Image
+          src={attachmentPreview?.url || ""}
+          alt="Preview"
+          width={32}
+          height={32}
+          className="h-8 w-8 object-cover rounded"
+        />
+      );
+    } else if (type === "application/pdf" || name.toLowerCase().endsWith('.pdf')) {
+      return <File className="h-4 w-4 text-red-500" />;
+    } else {
+      return <File className="h-4 w-4" />;
+    }
+  };
+
   return (
     <div className="!w-full !max-w-[710px] bg-accent px-4 py-4 rounded-3xl">
       <div>
         <form className="" onSubmit={handleFormSubmit}>
-        {attachmentPreview && (
+          {attachmentPreview && (
             <div className="mb-2 p-1.5 bg-muted/30 group h-12 aspect-square w-fit grid items-center relative rounded-lg border border-border/50">
               <div className="grid place-items-center gap-2 w-fit rounded-md">
                 {uploadState.isUploading && (
@@ -161,25 +186,21 @@ function ChatInput({
                     size={20}
                   />
                 )}
-                {attachmentPreview.type.startsWith("pdf/") &&
-                  !uploadState.isUploading && <File className="h-4 w-4" />}
-                {attachmentPreview.type.startsWith("image/") &&
-                  !uploadState.isUploading && (
-                    <Image
-                      src={attachmentPreview.url || ""}
-                      alt="Preview"
-                      width={32}
-                      height={32}
-                      className="h-8 w-8 object-cover rounded"
-                    />
-                  )}
+                {!uploadState.isUploading && getFileIcon(attachmentPreview.type, attachmentPreview.name)}
               </div>
 
               <X
-                className="h-5 rounded-md absolute group-hover:flex border-2 border-secondary hidden -top-2 -right-2 p-0 bg-destructive/20"
+                className="h-5 rounded-md absolute group-hover:flex border-2 border-secondary hidden -top-2 -right-2 p-0 bg-destructive/20 cursor-pointer"
                 onClick={handleRemoveAttachment}
                 size={18}
               />
+            </div>
+          )}
+
+          {/* Show upload error if any */}
+          {uploadState.error && (
+            <div className="mb-2 p-2 bg-red-50 border border-red-200 rounded-md">
+              <p className="text-sm text-red-600">{uploadState.error}</p>
             </div>
           )}
 
@@ -304,7 +325,7 @@ function ChatInput({
                     disabled={attachmentUrl ? true : false}
                     multiple={false}
                     className="hidden"
-                    accept="image/*"
+                    accept="image/*,application/pdf,.pdf,.doc,.docx,.txt"
                     onChange={handleFileSelect}
                   />
                 </div>

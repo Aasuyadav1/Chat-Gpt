@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import chatStore from "@/stores/chat.store";
 import { createMessage } from "@/action/message.action";
+import { useQueryClient } from "@tanstack/react-query";
 // import userStore from "@/stores/user.store";
 
 interface Message {
@@ -38,6 +39,7 @@ interface UseStreamResponseReturn {
 export function useStreamResponse(): UseStreamResponseReturn {
   const { isLoading, setIsLoading } = chatStore();
   const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
   
   const sendMessage = useCallback(
     async ({
@@ -70,7 +72,7 @@ export function useStreamResponse(): UseStreamResponseReturn {
       const optimisticMessage: Message = {
         tempId,
         threadId: chatid,
-        userId: "current-user", // Replace with actual user ID from your auth
+        userId: "sdfljaksfadfasf", // Random user id 
         userQuery: trimmedQuery,
         attachment: attachment || undefined,
         isSearch: isWebSearch,
@@ -197,9 +199,11 @@ export function useStreamResponse(): UseStreamResponseReturn {
           (msg: Message) => msg.tempId !== tempId
         );
         errorState.setMessages(messagesWithoutOptimistic);
+        setIsLoading(false);
         setError(err instanceof Error ? err.message : "An error occurred");
       } finally {
         setIsLoading(false);
+        queryClient.invalidateQueries({ queryKey: ["memories"] });
       }
     },
     [isLoading]

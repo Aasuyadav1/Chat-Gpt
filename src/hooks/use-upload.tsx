@@ -28,10 +28,8 @@ export const useCloudinaryUpload = (): UseCloudinaryUploadReturn => {
     // Determine resource type based on file type
     if (file.type.startsWith('image/')) {
       return `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
-    } else if (file.type.startsWith('video/')) {
-      return `https://api.cloudinary.com/v1_1/${cloudName}/video/upload`;
     } else {
-      // For PDFs, Word docs, and other file types including PSD
+      // For PDFs, Word docs, and other file types
       return `https://api.cloudinary.com/v1_1/${cloudName}/raw/upload`;
     }
   };
@@ -64,7 +62,7 @@ export const useCloudinaryUpload = (): UseCloudinaryUploadReturn => {
 
     // Add resource type for non-image files
     if (!file.type.startsWith('image/')) {
-      formData.append("resource_type", file.type.startsWith('video/') ? "video" : "raw");
+      formData.append("resource_type", "raw");
     }
 
     // Add additional parameters for PDF files
@@ -93,6 +91,8 @@ export const useCloudinaryUpload = (): UseCloudinaryUploadReturn => {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
+        // Add timeout for large files
+        timeout: 60000, // 60 seconds
       });
 
       setUploadState(prev => ({
@@ -104,21 +104,55 @@ export const useCloudinaryUpload = (): UseCloudinaryUploadReturn => {
 
       return response.data;
     } catch (error: any) {
-      // Handle specific untrusted customer error
-      if (error.response?.data?.error?.code === 'show_original_customer_untrusted') {
-        const errorMessage = 'PDF files require account verification. Please verify your Cloudinary account or contact support.';
+      console.error('Upload error:', error.response?.data || error.message);
+      
+      // Handle specific error cases
+      if (error.response?.data?.error) {
+        const errorData = error.response.data.error;
         
-        setUploadState(prev => ({
-          ...prev,
-          isUploading: false,
-          progress: 0,
-          error: errorMessage,
-        }));
+        // Handle untrusted customer error
+        if (errorData.code === 'show_original_customer_untrusted') {
+          const errorMessage = 'PDF files require account verification. Please verify your Cloudinary account or contact support.';
+          
+          setUploadState(prev => ({
+            ...prev,
+            isUploading: false,
+            progress: 0,
+            error: errorMessage,
+          }));
 
-        // Create a custom error with more context
-        const customError = new Error(errorMessage);
-        customError.name = 'CloudinaryUntrustedError';
-        throw customError;
+          const customError = new Error(errorMessage);
+          customError.name = 'CloudinaryUntrustedError';
+          throw customError;
+        }
+        
+        // Handle invalid upload preset
+        if (errorData.message?.includes('Invalid upload preset')) {
+          const errorMessage = 'Upload preset not configured for this file type. Please check your Cloudinary settings.';
+          
+          setUploadState(prev => ({
+            ...prev,
+            isUploading: false,
+            progress: 0,
+            error: errorMessage,
+          }));
+
+          throw new Error(errorMessage);
+        }
+        
+        // Handle file size limit
+        if (errorData.message?.includes('File size too large')) {
+          const errorMessage = 'File size is too large. Please try a smaller file.';
+          
+          setUploadState(prev => ({
+            ...prev,
+            isUploading: false,
+            progress: 0,
+            error: errorMessage,
+          }));
+
+          throw new Error(errorMessage);
+        }
       }
 
       const errorMessage = error.response?.data?.error?.message || 
