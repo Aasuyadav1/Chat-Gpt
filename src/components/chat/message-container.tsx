@@ -12,9 +12,9 @@ import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 import { processSpecificT3Tags } from "@/lib/chat-parser";
 import { toast } from "sonner";
 import { useStreamResponse } from "@/hooks/use-response-stream";
+import DevClipboard from "../global/dev-clipboard";
 
 
-// Helper function to detect if URL is a PDF
 const isPdfUrl = (url: string): boolean => {
   const urlLower = url.toLowerCase();
   return urlLower.includes('pdf') || urlLower.includes('.pdf') || urlLower.includes('application/pdf');
@@ -44,7 +44,6 @@ interface MessageActionsProps {
   message?: Message;
 }
 
-// Reusable Message Actions Component
 export const MessageActions: React.FC<MessageActionsProps> = ({
   onEdit,
   message,
@@ -150,7 +149,7 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
         </span>
       )}
 
-      {/* <DevClipboard
+      <DevClipboard
         className="h-8 w-8 text-xs"
         textClip={
           (role === "user"
@@ -159,11 +158,10 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
         }
         beforeCopy={<Copy aria-hidden="true" />}
         afterCopy={<Check aria-hidden="true" />}
-      /> */}
+      />
 
 
       {role === "assistant" && (
-        // <DevTooltip tipData="Retry message">
           <Button
             variant="ghost"
             size="icon"
@@ -182,11 +180,9 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
               <span className="sr-only">Retry</span>
             </div>
           </Button>
-        // </DevTooltip>
       )}
 
       {role === "user" && (
-        // <DevTooltip tipData="Edit message">
           <Button
             variant="ghost"
             size="icon"
@@ -197,24 +193,10 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
           >
             <SquarePen className="h-4 w-4" aria-hidden="true" />
           </Button>
-        // </DevTooltip>
       )}
-
-      {/* {role === "assistant" && (
-        <div className="flex items-center text-nowrap pointer-events-none select-none gap-1 text-xs text-muted-foreground capitalize">
-          <span>
-            {message?.aiResponse?.[responseIndex]?.model
-              .split("/")[1]
-              .trim()
-              .replace(/-/g, " ")}
-          </span>
-        </div>
-      )} */}
     </div>
   );
 };
-
-// User Message Component
 
 interface UserMessageProps {
   content: string;
@@ -379,7 +361,6 @@ export const UserMessage: React.FC<UserMessageProps> = ({
               <input
                 type="checkbox"
                 name={messageId}
-                // id={messageId}
                 className={`${messageId} checked:hidden peer z-10 absolute opacity-0 inset-0`}
               />
 
@@ -504,7 +485,6 @@ export const AIResponse: React.FC<AIResponseProps> = ({
   );
 };
 
-// Message Pair Component (User + AI Response)
 interface MessagePairProps {
   message: Message;
   threadId: string;
