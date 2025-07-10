@@ -153,7 +153,7 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
         className="h-8 w-8 text-xs"
         textClip={
           (role === "user"
-            ? userQuery
+            ? message?.userQuery
             : message?.aiResponse?.[responseIndex]?.content) || ""
         }
         beforeCopy={<Copy aria-hidden="true" />}
