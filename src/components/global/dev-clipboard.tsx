@@ -20,7 +20,9 @@ const DevClipboard = ({
   const [copy, setCopy] = useState(false);
   const copyToClipboard = async () => {
     try {
+        console.log("textClip", textClip);
       await navigator.clipboard.writeText(textClip);
+
       if (setCopy) {
         setCopy(true);
         setTimeout(() => setCopy(false), 1000); // Reset copied state after 1 seconds

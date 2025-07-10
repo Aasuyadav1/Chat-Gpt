@@ -49,7 +49,7 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
   message,
   onCopy,
   onBranch,
-  role,
+  role = "user",
   messageId,
   userQuery,
   totalResponses = 0,
@@ -127,6 +127,7 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
     }
   };
 
+
   return (
     <div className="flex items-center gap-1">
       {role === "assistant" && totalResponses > 1 && (
@@ -152,8 +153,8 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
       <DevClipboard
         className="h-8 w-8 text-xs"
         textClip={
-          (role === "user"
-            ? message?.userQuery
+          (role == "user"
+            ? message?.userQuery || ""
             : message?.aiResponse?.[responseIndex]?.content) || ""
         }
         beforeCopy={<Copy aria-hidden="true" />}
@@ -207,6 +208,7 @@ interface UserMessageProps {
   onEdit?: () => void;
   onCopy?: () => void;
   threadId?: string;
+  message?: Message;
 }
 
 export const UserMessage: React.FC<UserMessageProps> = ({
@@ -218,6 +220,7 @@ export const UserMessage: React.FC<UserMessageProps> = ({
   onEdit,
   threadId,
   onCopy,
+  message,
 }) => {
   const { setQuery } = chatStore();
   const [isEditing, setIsEditing] = useState(false);
@@ -349,6 +352,7 @@ export const UserMessage: React.FC<UserMessageProps> = ({
             <div className="absolute right-0 -bottom-10 flex items-center gap-1 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 group-focus:opacity-100">
               <MessageActions
                 role="user"
+                message={message || { _id: messageId || '', userQuery: content }}
                 onEdit={handleEdit}
                 onCopy={onCopy}
                 showBranch={false}
@@ -501,6 +505,7 @@ const MessagePair: React.FC<MessagePairProps> = ({ message, threadId }) => {
         attachmentUrl={message.attachment}
         messageId={message._id}
         threadId={threadId}
+        message={message}
       />
       <AIResponse
         content={aiContent}
