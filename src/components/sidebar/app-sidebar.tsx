@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-
+import { SiOpenai } from "react-icons/si";
 import {
   Sidebar,
   SidebarContent,
@@ -58,7 +58,7 @@ export function AppSidebar() {
             {/* Header */}
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2 px-3 py-1 group-data-[collapsible=icon]:hidden">
-                <MessageSquareCode className="h-7 w-7" />
+                <SiOpenai className="h-7 w-7" />
               </div>
               <SidebarTrigger />
             </div>

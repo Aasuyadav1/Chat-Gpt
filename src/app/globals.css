@@ -4,46 +4,6 @@
 
 @custom-variant dark (&:is(.dark *));
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-}
-
 :root {
   --background: oklch(0.9740 0.0054 17.2492);
   --foreground: oklch(0.3080 0.0890 20.2706);
@@ -91,6 +51,16 @@
   --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
   --tracking-normal: 0em;
   --spacing: 0.24rem;
+
+  --gradient-noise-top: 292 42.9% 93.1%;
+  --color-heading: 336.3 70.3% 19.8%;
+  --chat-border: 304.8 61% 83.9%;
+  --chat-background: 300 56% 98%;
+  --chat-accent: #f5ecf9;
+  --chat-input-gradient: 295 100% 90%;
+  --chat-input-background: hsla(270, 0%, 100%, var(--blur-fallback, 0.1));
+  --chat-overlay: hsla(309, 63%, 92%, var(--blur-fallback, 0.72));
+  --wordmark-color: #ca0277;
 
   --shiki-foreground: rgb(108, 76, 188);
   --shiki-background: rgb(103, 60, 139);
@@ -182,6 +152,17 @@
   --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 8px 10px -1px hsl(0 0% 0% / 0.10);
   --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
 
+  --gradient-noise-top: 309 15% 9%;
+  --color-heading: 328.2 45.9% 57.3%;
+  --chat-border: 333.3 22% 16.1%;
+  --chat-background: 270 16.13% 12.16%;
+  --chat-accent: rgba(25, 21, 30, 0.86);
+  --chat-input-gradient: 289 23% 23%;
+  --chat-input-background: hsla(270, 10%, 20%, var(--blur-fallback, 0.4));
+  --chat-overlay: hsla(270, 12%, 16%, var(--blur-fallback, 0.71));
+  --wordmark-color: #e3bad1;
+
+
   --shiki-foreground: rgb(210, 199, 225);
   --shiki-background: rgb(29, 25, 33);
   --shiki-token-constant: rgb(255, 188, 158);
@@ -259,6 +240,15 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-gradient-noise-top: hsl(var(--gradient-noise-top));
+  --color-color-heading: hsl(var(--color-heading));
+  --color-chat-border: hsl(var(--chat-border));
+  --color-chat-background: hsl(var(--chat-background));
+  --color-chat-accent: var(--chat-accent);
+  --color-chat-input-gradient: hsl(var(--chat-input-gradient));
+  --color-chat-input-background: var(--chat-input-background);
+  --color-chat-overlay: var(--chat-overlay);
 
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
@@ -350,6 +340,19 @@
   opacity: var(--opacity, 1);
 }
 
+@supports (not (backdrop-filter: blur())) and (not (overscroll-behavior: auto)) {
+  :root {
+    --blur-fallback: 1;
+  }
+}
+@media (max-width: 767px) and (any-pointer: coarse) {
+  .min-h-pwa,
+  body,
+  html {
+    overscroll-behavior-y: none;
+  }
+}
+
 #chat-input,
 .edit-input {
   field-sizing: content;
@@ -439,9 +442,11 @@ button{
 .t3-tool-loader:has(~ .t3-tool-output) {
   display: none !important;
 }
+
 .t3-tool-loader:has(~ p:not(:empty)) {
   display: none !important;
 }
+
 @layer base {
   .animate-bounce-dot {
     animation: bounce-dot 1.4s infinite ease-in-out both;

@@ -20,6 +20,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
+import { FiLoader } from "react-icons/fi";
 
 const PROMPT_TYPES = {
   Longer: "Lengthen",
@@ -333,33 +334,51 @@ const TextSelectionDropdown = () => {
     }
 
     if (!findSubMessage?.content || !selectedText) {
-      throw new Error("Missing response content or selected text. Please provide both to proceed.");
+      throw new Error(
+        "Missing response content or selected text. Please provide both to proceed."
+      );
     }
-    
+
     const basePrompt = `You are an advanced AI assistant tasked with modifying a specific part of a response while ensuring the entire response remains cohesive, natural, and aligned with its original intent. The original response is: "${findSubMessage.content}". The specific part to modify is: "${selectedText}".`;
-    
+
     const promptInstructions: { [key: string]: string } = {
-      Custom: "Apply the custom modification specified in: '${inputRef.current?.value}'.",
-      Longer: "Expand the content to be more detailed and comprehensive, adding relevant information.",
-      Shorter: "Condense the content to be more concise while retaining key points.",
-      Regenerate: "Rewrite the content entirely, maintaining the original meaning and context.",
+      Custom:
+        "Apply the custom modification specified in: '${inputRef.current?.value}'.",
+      Longer:
+        "Expand the content to be more detailed and comprehensive, adding relevant information.",
+      Shorter:
+        "Condense the content to be more concise while retaining key points.",
+      Regenerate:
+        "Rewrite the content entirely, maintaining the original meaning and context.",
       Remove: "Remove the content and adjust surrounding text for smooth flow.",
       Simplify: "Rewrite using simpler language for clarity and accessibility.",
       Elaborate: "Add more depth, details, and context to enrich the content.",
-      Formalize: "Rewrite in a professional, formal tone suitable for official communication.",
-      Casual: "Rewrite in a relaxed, conversational tone for a friendly audience.",
-      Persuasive: "Rewrite to be more compelling and convincing, emphasizing key arguments.",
-      Technical: "Incorporate precise technical details and terminology relevant to the context.",
-      Metaphor: "Integrate a relevant and vivid metaphor to enhance the content's impact.",
+      Formalize:
+        "Rewrite in a professional, formal tone suitable for official communication.",
+      Casual:
+        "Rewrite in a relaxed, conversational tone for a friendly audience.",
+      Persuasive:
+        "Rewrite to be more compelling and convincing, emphasizing key arguments.",
+      Technical:
+        "Incorporate precise technical details and terminology relevant to the context.",
+      Metaphor:
+        "Integrate a relevant and vivid metaphor to enhance the content's impact.",
       Examples: "Add clear, relevant examples to illustrate the content.",
-      Counterargument: "Introduce a balanced counterargument and address it effectively.",
-      Summary: "Provide a concise summary capturing the essence of the content.",
+      Counterargument:
+        "Introduce a balanced counterargument and address it effectively.",
+      Summary:
+        "Provide a concise summary capturing the essence of the content.",
     };
-    
-    const instruction = action === "Custom" && inputRef.current?.value 
-      ? promptInstructions.Custom.replace("${inputRef.current?.value}", inputRef.current.value)
-      : promptInstructions[action] || "Modify as appropriate based on the context.";
-    
+
+    const instruction =
+      action === "Custom" && inputRef.current?.value
+        ? promptInstructions.Custom.replace(
+            "${inputRef.current?.value}",
+            inputRef.current.value
+          )
+        : promptInstructions[action] ||
+          "Modify as appropriate based on the context.";
+
     const prompt = `${basePrompt} ${instruction} Ensure the modified part integrates seamlessly with the rest of the response, preserving the original tone, structure, and essential introductory and concluding phrases. Return only the entire modified response without adding non-contextual information or meta-commentary (e.g., avoid phrases like "Here is the changes request").`;
 
     const promptMessage: any = {
@@ -481,7 +500,11 @@ const TextSelectionDropdown = () => {
                   onClick={() => updateMessage("Custom")}
                   disabled={isProcessing}
                 >
-                  <FaArrowUp />
+                  {isProcessing ? (
+                    <FiLoader className="animate-spin" />
+                  ) : (
+                    <FaArrowUp />
+                  )}
                 </Button>
               </div>
               <div className="space-y-1 max-h-[200px] overflow-y-auto">
