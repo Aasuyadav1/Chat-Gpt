@@ -18,12 +18,10 @@ import {
 } from "lucide-react";
 import ProfileDropdown from "../global/profile-dropdown";
 import { SidebarTrigger } from "../ui/sidebar";
-import VerifyKey from "./verify-key";
 
 const Header = () => {
   return (
     <header className="z-50 absolute top-0 left-0 w-full flex items-center justify-between bg-background px-4 py-2">
-      <VerifyKey />
       <div className="flex items-center gap-2">
         <div className="md:hidden flex items-center justify-between px-3 py-2">
           <SidebarTrigger />
