@@ -2,6 +2,7 @@ import React from 'react'
 import ChatInput from '@/components/chat/chat-input'
 import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
+import ShinyText from '@/components/global/shinny-text'
 
 const page = async () => {
   const session = await auth()
@@ -10,7 +11,7 @@ const page = async () => {
   }
   return (
     <div className='flex flex-col h-full gap-4 justify-center items-center'>
-      <p className='text-3xl mb-8'>What are you working on?</p>
+      <ShinyText text="What are you working on?" disabled={false} speed={3} className='text-3xl mb-8' />
       <ChatInput isNewThread={true}/>
     </div>
   )

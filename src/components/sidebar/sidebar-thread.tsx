@@ -47,6 +47,7 @@ import { Label } from "@/components/ui/label";
 import { Edit, MoreHorizontal } from "lucide-react";
 import { FiLoader } from "react-icons/fi";
 import { useParams } from "next/navigation";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Thread {
   _id: string;
@@ -199,13 +200,34 @@ const SidebarThreads = () => {
     setRenameDialogOpen(true);
   };
 
-  if (error || isLoading) {
+  if (isLoading) {
     return (
       <SidebarContent>
-        <div className="p-4 text-center gap-2 text-muted-foreground mt-4 flex justify-center items-center">
-          <FiLoader className="animate-spin" />
-          Loading threads
-        </div>
+        <SidebarGroup className="space-y-2 group-data-[collapsible=icon]:hidden">
+          <SidebarMenu>
+            {Array.from({ length: 3 }).map((_, index) => (
+              <SidebarMenuItem
+                key={index}
+                className="p-2 space-y-1 !text-[15px] font-light flex items-center relative group/link-item rounded-lg"
+              >
+                  <Skeleton className="h-6 flex-1" />
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </SidebarGroup>
+        
+        <SidebarGroup className="space-y-2 group-data-[collapsible=icon]:hidden">
+          <SidebarMenu>
+            {Array.from({ length: 6 }).map((_, index) => (
+              <SidebarMenuItem
+                key={index}
+                className="p-2 space-y-1 !text-[15px] font-light flex items-center relative group/link-item rounded-lg"
+              >
+                  <Skeleton className="h-6 flex-1" />
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </SidebarGroup>
       </SidebarContent>
     );
   }

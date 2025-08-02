@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { streamText, tool } from "ai";
-import { google } from "@ai-sdk/google";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { z } from "zod";
 import { GoogleGenAI, Modality } from "@google/genai";
 import axios from "axios";
@@ -22,7 +22,6 @@ enum ErrorType {
   CLOUDINARY_ERROR = "CLOUDINARY_ERROR",
   GEMINI_ERROR = "GEMINI_ERROR",
   TAVILY_ERROR = "TAVILY_ERROR",
-  OPENROUTER_ERROR = "OPENROUTER_ERROR",
   STREAM_ERROR = "STREAM_ERROR",
   SAFETY_ERROR = "SAFETY_ERROR",
   MODEL_ERROR = "MODEL_ERROR",
@@ -61,8 +60,6 @@ const categorizeError = (
   const errorCode = error.code || error.response?.data?.code || "";
   const errorDetails = error.response?.data || error.message;
 
-  // Prioritize identifying the exact service for LLM errors based on the 'modelService'
-  // This helps differentiate OpenRouter vs Gemini errors even if error messages are generic
   if (modelService === ServiceName.GEMINI) {
     if (
       errorMessage.includes("api key") ||
@@ -213,14 +210,9 @@ const uploadToCloudinary = async (
   }
 };
 
-const generateImage = async (prompt: string) => {
-  const GEMINI_API_KEY = process.env.GEMINI_API_KEY
-  if (!GEMINI_API_KEY) {
-    throw new Error("GEMINI_API_KEY environment variable is not set");
-  }
-
+const generateImage = async (prompt: string, apiKey: string) => {
   try {
-    const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+    const ai = new GoogleGenAI({ apiKey: apiKey });
 
     const response = await ai.models.generateContent({
       model: "gemini-2.0-flash-preview-image-generation",
@@ -365,6 +357,7 @@ export async function POST(request: NextRequest) {
   const messages = body.messages;
   const isWebSearch = body.isWebSearch;
   const session = await auth();
+
   if (!session?.user) {
     return createErrorStream({
       type: ErrorType.AUTHENTICATION_ERROR,
@@ -387,10 +380,7 @@ export async function POST(request: NextRequest) {
       return createErrorStream(serviceError);
     }
 
-
     const getLastMessage = messages[messages.length - 1];
-
-    console.log("getLastMessage", getLastMessage.content[0].text);
 
     const memories = await retrieveMemories(getLastMessage.content[0].text, {
       ...mem0Config,
@@ -399,8 +389,12 @@ export async function POST(request: NextRequest) {
 
     let result;
     try {
+      const googleProvider = createGoogleGenerativeAI({
+        apiKey: process.env.GEMINI_API_KEY,
+      });
+      
       result = streamText({
-        model: google(`models/gemini-2.0-flash-001`),
+        model: googleProvider(`models/gemini-2.0-flash-001`),
         messages: [
           {
             role: "system",
@@ -419,17 +413,17 @@ export async function POST(request: NextRequest) {
           generateImage: tool({
             description: `Generate a high-quality image based on a detailed text prompt using Google's Gemini AI. The image is automatically uploaded to Cloudinary and returned as a URL within a <t3-image> tag. Use this tool for user requests to create, generate, or make images. Always ensure the image is high-quality with a square aspect ratio (1:1). The output MUST be enclosed in a <t3-image> tag (e.g., <t3-image>[URL]</t3-image>). CRITICALLY, the Cloudinary URL (e.g., https://res.cloudinary.com/dmmqpvdnb/image/upload/...) returned by the tool MUST NOT be altered in any way, including the account ID (e.g., 'dmmqpvdnb'). Return the exact URL provided by the tool to avoid invalid links. If generation fails, return <t3-gemini>{Follow the response message}</t3-gemini>.`,
             parameters: z.object({
-              prompt: z
+              prompt: z 
                 .string()
                 .describe(
                   "A detailed text prompt describing the image to generate. Will be enhanced to ensure high-quality output with a square aspect ratio (1:1). Example: 'A vibrant sunset over a mountain, high-quality, square aspect ratio, detailed'."
                 ),
+              apiKey: z.string().describe("The API key to use for the image generation.").default(process.env.GEMINI_API_KEY as string),
             }),
-            execute: async ({ prompt }) => {
+            execute: async ({ prompt, apiKey }) => {
               const enhancedPrompt = `${prompt}, high-quality, square aspect ratio, detailed`;
               try {
-                const result = await generateImage(enhancedPrompt);
-                console.log("the reults from  the geernat image",result);
+                const result = await generateImage(enhancedPrompt, apiKey);
                 // Ensure the exact URL is used without modification
                 const imageUrl = result.imageUrl || null;
                 if (!imageUrl) {

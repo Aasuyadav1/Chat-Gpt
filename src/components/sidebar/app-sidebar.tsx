@@ -42,10 +42,6 @@ const quickActions = [
     icon: null, // We'll handle this separately
     component: SearchButton,
   },
-  {
-    title: "Library",
-    icon: Library,
-  },
 ];
 
 export function AppSidebar() {
