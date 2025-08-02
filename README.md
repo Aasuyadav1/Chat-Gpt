@@ -1,3 +1,5 @@
+![ChatGPT Clone Banner](./public/chat-gpt-bg.png)
+
 # ChatGPT Clone
 
 A powerful ChatGPT clone featuring advanced AI capabilities:
@@ -39,5 +41,3 @@ TAVILY_API_KEY=your_tavily_api_key
 NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
 NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=your_cloudinary_upload_preset
 ```
-
-Be sure to replace the placeholder values with your actual credentials and secrets. Never commit your real `.env` file to version control.
