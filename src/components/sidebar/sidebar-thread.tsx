@@ -210,12 +210,12 @@ const SidebarThreads = () => {
                 key={index}
                 className="p-2 space-y-1 !text-[15px] font-light flex items-center relative group/link-item rounded-lg"
               >
-                  <Skeleton className="h-6 flex-1" />
+                <Skeleton className="h-6 flex-1" />
               </SidebarMenuItem>
             ))}
           </SidebarMenu>
         </SidebarGroup>
-        
+
         <SidebarGroup className="space-y-2 group-data-[collapsible=icon]:hidden">
           <SidebarMenu>
             {Array.from({ length: 6 }).map((_, index) => (
@@ -223,7 +223,7 @@ const SidebarThreads = () => {
                 key={index}
                 className="p-2 space-y-1 !text-[15px] font-light flex items-center relative group/link-item rounded-lg"
               >
-                  <Skeleton className="h-6 flex-1" />
+                <Skeleton className="h-6 flex-1" />
               </SidebarMenuItem>
             ))}
           </SidebarMenu>
@@ -248,15 +248,13 @@ const SidebarThreads = () => {
       deleteMutation.variables === thread._id;
 
     return (
-            <SidebarMenuItem
-        className={`hover:bg-sidebar-accent px-3 !text-[15px] font-light flex items-center relative px-0 group/link-item rounded-lg ${
-          params.chatid === thread._id ? "!bg-sidebar-accent" : ""
-        } ${inFolder ? "ml-4" : ""}`}
+      <SidebarMenuItem
+        className={`hover:bg-sidebar-accent px-3 !text-[15px] font-light flex items-center relative px-0 group/link-item rounded-lg ${params.chatid === thread._id ? "!bg-sidebar-accent" : ""
+          } ${inFolder ? "ml-4" : ""}`}
       >
         <Link
-          className={`flex-1 p-2 text-nowrap overflow-hidden truncate ${
-            showBranchIcon ? "flex items-center gap-2" : "block"
-          }`}
+          className={`flex-1 p-2 text-nowrap overflow-hidden truncate ${showBranchIcon ? "flex items-center gap-2" : "block"
+            }`}
           prefetch={true}
           href={`/chat/${thread._id}`}
         >
@@ -299,9 +297,9 @@ const SidebarThreads = () => {
                 <MoreHorizontal className="h-3 w-3" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent 
-              className="w-32 z-50 *:cursor-pointer" 
-              align="end" 
+            <DropdownMenuContent
+              className="w-32 z-50 *:cursor-pointer"
+              align="end"
               side="right"
               sideOffset={5}
               alignOffset={-5}
@@ -321,7 +319,7 @@ const SidebarThreads = () => {
                 )}
                 {thread.isPinned ? "Unpin" : "Pin"}
               </DropdownMenuItem>
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 onClick={(e) => {
                   e.stopPropagation();
                   openRenameDialog(thread);
@@ -386,10 +384,10 @@ const SidebarThreads = () => {
         {(!threadsData ||
           ((!threadsData.chat || threadsData.chat.length === 0) &&
             threadsData.pin.length === 0)) && (
-          <div className="p-4 text-center gap-3 text-muted-foreground flex-col mt-4 flex justify-center items-center">
-            <PiChatSlashDuotone size={30} />  No threads found
-          </div>
-        )}
+            <div className="p-4 text-center gap-3 text-muted-foreground flex-col mt-4 flex justify-center items-center">
+              <PiChatSlashDuotone size={30} />  No threads found
+            </div>
+          )}
       </SidebarContent>
 
       {/* Delete Thread Confirmation Dialog */}
