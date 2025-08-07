@@ -1,6 +1,6 @@
-![ChatGPT Clone Banner](./public/chat-gpt-bg.png)
-
 # ChatGPT Clone
+
+![ChatGPT Clone Banner](./public/chat-gpt-bg.png)
 
 A powerful ChatGPT clone featuring advanced AI capabilities:
 
