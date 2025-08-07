@@ -12,7 +12,7 @@ export function SearchButton() {
     <>
       <Button
         variant="ghost"
-        className="w-full justify-start !text-[13px] font-normal gap-3 px-3 py-2 h-9"
+        className="w-full justify-start !text-[15px] !font-light gap-3 px-3 h-9"
         onClick={() => setOpen(true)}
       >
         <Search className="w-4 h-4" />

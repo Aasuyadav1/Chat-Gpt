@@ -50,7 +50,7 @@ const page = () => {
   }, [params.chatid]);
 
   return (
-    <div className="overflow-x-hidden">
+    <div className="overflow-x-hidden p-2 md:p-0">
       <div className="mt-10 py-10 overflow-y-auto h-[calc(100vh-235px)]">
         <TextSelectionDropdown />
         <div

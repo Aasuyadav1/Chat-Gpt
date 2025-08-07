@@ -10,7 +10,7 @@ const page = async () => {
     redirect('/auth')
   }
   return (
-    <div className='flex flex-col h-full gap-4 justify-center items-center'>
+    <div className='flex flex-col h-full gap-4 justify-center items-center p-2 md:p-0'>
       <ShinyText text="What are you working on?" disabled={false} speed={3} className='text-3xl mb-8' />
       <ChatInput isNewThread={true}/>
     </div>

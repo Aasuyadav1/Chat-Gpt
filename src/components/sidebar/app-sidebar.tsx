@@ -71,7 +71,7 @@ export function AppSidebar() {
                           <Button
                             onClick={() => router.push(item.link)}
                             variant="ghost"
-                            className="w-full justify-start !text-[15px] !font-light gap-3 px-3"
+                            className="w-full justify-start !text-[15px] !font-light gap-2 px-3"
                           >
                             <item.icon className="!w-5 !h-5" />
                             <span className="group-data-[collapsible=icon]:hidden">
